@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head><title>Dot Battle</title>
+  <link rel="stylesheet" href="STYLEFORGAME.CSS">
+  <script src="pathfinding.js" type="module"></script>
+</head>
+<body>
+  <div id="input-container">
+    <h2>Red Team</h2>
+    <label for="numRedFormations">Number of Formations:</label>
+    <select id="numRedFormations">
+      <option value="1">1</option>
+      <option value="2">2</option>
+    </select>
+    <br>
+    <div id="redFormation1">
+      <label for="numRedDots1">Number of Dots:</label>
+      <input type="number" id="numRedDots1" value="33">
+      <br>
+      <label for="redFormationType1">Formation Type:</label>
+      <select id="redFormationType1">
+        <option value="square">Square</option>
+        <option value="rectangle">Rectangle</option>
+        <option value="triangle">Triangle</option>
+      </select>
+      <br>
+      <label for="redPosition1">Position:</label>
+      <select id="redPosition1">
+        <option value="topLeft">Top Left</option>
+        <option value="bottomLeft">Bottom Left</option>
+        <option value="center">Center</option>
+      </select>
+      <br>
+      <input type="checkbox" id="redArcher1">
+      <label for="redArcher1"> Archers</label>
+    </div>
+    <div id="redFormation2" style="display:none;">
+      <label for="numRedDots2">Number of Dots:</label>
+      <input type="number" id="numRedDots2" value="33">
+      <br>
+      <label for="redFormationType2">Formation Type:</label>
+      <select id="redFormationType2">
+        <option value="square">Square</option>
+        <option value="rectangle">Rectangle</option>
+        <option value="triangle">Triangle</option>
+      </select>
+      <br>
+      <label for="redPosition2">Position:</label>
+      <select id="redPosition2">
+        <option value="topLeft">Top Left</option>
+        <option value="bottomLeft">Bottom Left</option>
+        <option value="center">Center</option>
+      </select>
+      <br>
+      <input type="checkbox" id="redArcher2">
+      <label for="redArcher2"> Archers</label>
+    </div>
+
+    <h2>Blue Team</h2>
+    <label for="numBlueFormations">Number of Formations:</label>
+    <select id="numBlueFormations">
+      <option value="1">1</option>
+      <option value="2">2</option>
+    </select>
+    <br>
+    <div id="blueFormation1">
+      <label for="numBlueDots1">Number of Dots:</label>
+      <input type="number" id="numBlueDots1" value="33">
+      <br>
+      <label for="blueFormationType1">Formation Type:</label>
+      <select id="blueFormationType1">
+        <option value="square">Square</option>
+        <option value="rectangle">Rectangle</option>
+        <option value="triangle">Triangle</option>
+      </select>
+      <br>
+      <label for="bluePosition1">Position:</label>
+      <select id="bluePosition1">
+        <option value="topRight">Top Right</option>
+        <option value="bottomRight">Bottom Right</option>
+        <option value="center">Center</option>
+      </select>
+      <br>
+      <input type="checkbox" id="blueArcher1">
+      <label for="blueArcher1"> Archers</label>
+    </div>
+    <div id="blueFormation2" style="display:none;">
+      <label for="numBlueDots2">Number of Dots:</label>
+      <input type="number" id="numBlueDots2" value="33">
+      <br>
+      <label for="blueFormationType2">Formation Type:</label>
+      <select id="blueFormationType2">
+        <option value="square">Square</option>
+        <option value="rectangle">Rectangle</option>
+        <option value="triangle">Triangle</option>
+      </select>
+      <br>
+      <label for="bluePosition2">Position:</label>
+      <select id="bluePosition2">
+        <option value="topRight">Top Right</option>
+        <option value="bottomRight">Bottom Right</option>
+        <option value="center">Center</option>
+      </select>
+      <br>
+      <input type="checkbox" id="blueArcher2">
+      <label for="blueArcher2"> Archers</label>
+    </div>
+    <br>
+    <button id="startGame">Start Battle!</button>
+  </div>
+
+  <canvas id="battlefield" width="1200" height="800"></canvas>
+  <script src="GAME3.js" type="module"></script>
+</body>
+</html>
