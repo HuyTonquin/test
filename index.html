@@ -385,7 +385,7 @@
                 const stickWorldPos = stickLocalPos.clone().applyQuaternion(crossbowGroup.quaternion).add(crossbowGroup.position);
                 stick.position.copy(stickWorldPos);
                 // Stick rotation: static except for x, which is -crossbowGroup.rotation.x (as in crtest2.html)
-                stick.rotation.set(-crossbowGroup.rotation.x, 0, 0);
+                stick.rotation.set(-crossbowGroup.rotation.x, 0, -crossbowGroup.rotation.z);
                 stick.visible = true;
             } else {
                 stick.visible = false;
