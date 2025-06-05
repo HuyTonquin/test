@@ -50,7 +50,7 @@
             padding: 0.7em 1.2em;
             border-radius: 0.6em;
             font-size: 1.2em;
-            z-index: 100;
+            z-index: 9999;
         }
     </style>
 </head>
@@ -426,7 +426,7 @@
                     }, reloadTime * 1000);
                 }
                 // Remove arrow if too far or below ground
-                else if (arrow && (arrow.position.distanceTo(camera.position) > 10 || arrow.position.y < -1)) {
+                else if (arrow && (arrow.position.distanceTo(camera.position) > 10 || arrow.position.y < -2)) {
                     scene.remove(arrow);
                     arrow = null;
                     isShooting = false;
