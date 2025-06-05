@@ -134,8 +134,7 @@
             const stickMaterial = new THREE.MeshPhongMaterial({ color: 0xff0000, shininess: 100 });
             stick = new THREE.Mesh(stickGeometry, stickMaterial);
             stick.position.set(-0.006, 0.032, 0.13);
-            // Do NOT add stick to group here
-            // group.add(stick);
+            group.add(stick); // Add stick as child of crossbowGroup
 
             // Limbs
             const leftLimbCurve = new THREE.CatmullRomCurve3([
@@ -241,10 +240,7 @@
             crossbowGroup = createCrossbowGroup(textureLoader);
             crossbowGroup.visible = false;
             scene.add(crossbowGroup);
-
-            // Add stick as a separate object in the scene
-            scene.add(stick);
-            stick.visible = false;
+            // No need to add stick separately
         }
 
         // Shooting logic variables
@@ -377,14 +373,10 @@
                 crossbowGroup.position.copy(camera.position).add(offset);
                 crossbowGroup.quaternion.copy(camera.quaternion);
 
-                // --- Stick static logic ---
-                // Compute stick's world position as if it was attached to crossbowGroup, but do NOT rotate it
-                // Use the stick's local position in crossbowGroup
-                const stickLocalPos = new THREE.Vector3(-0.006, 0.032, 0.13);
-                // Apply only crossbowGroup's position (not rotation)
-                stick.position.copy(crossbowGroup.position).add(stickLocalPos);
-                stick.rotation.set(0, 0, 0); // Keep stick unrotated (static)
-                stick.visible = true;
+                // Make stick visually static (inverse rotation)
+                if (stick) {
+                    stick.rotation.x = -crossbowGroup.rotation.x;
+                }
             } else {
                 stick.visible = false;
             }
@@ -411,7 +403,7 @@
                 }
 
                 // Hit detection with target
-                if (target && target.visible && !target.hit && arrow.position.distanceTo(target.position) < 0.12) {
+                if (target && target.visible && !target.hit && arrow.position.distanceTo(target.position) < 0.1) {
                     scene.remove(arrow);
                     arrow = null;
                     isShooting = false;
