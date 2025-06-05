@@ -380,7 +380,7 @@
                 // Get camera's Euler angles
                 const euler = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ');
                 crossbowGroup.rotation.x = 0; // pitch (up/down)
-                crossbowGroup.rotation.y = euler.y;
+                crossbowGroup.rotation.y = euler.(-y);
                 crossbowGroup.rotation.z = 0 ;
 
                 // --- Stick follows crossbow position only ---
