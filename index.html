@@ -372,6 +372,10 @@
             // Move crossbow group with camera if visible
             if (crossbowGroup && crossbowGroup.visible && renderer.xr.isPresenting) {
                 renderer.xr.getCamera(camera);
+                const offset = new THREE.Vector3(0, -0.05, -0.3);
+                offset.applyQuaternion(camera.quaternion);
+                crossbowGroup.position.copy(camera.position).add(offset);
+
                             // Adjust crossbow rotation: follow camera's up/down (pitch) and left/right (yaw) by setting rotation.y and rotation.z
                 // Get camera's Euler angles
                 const euler = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ');
