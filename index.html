@@ -134,81 +134,10 @@
             const stickMaterial = new THREE.MeshPhongMaterial({ color: 0xff0000, shininess: 100 });
             stick = new THREE.Mesh(stickGeometry, stickMaterial);
             stick.position.set(-0.006, 0.032, 0.13);
-            group.add(stick);
-
-            // Limbs
-            const leftLimbCurve = new THREE.CatmullRomCurve3([
-                new THREE.Vector3(0.01, 0.02, -0.09),
-                new THREE.Vector3(0.035, 0.02, -0.1),
-                new THREE.Vector3(0.09, 0.02, -0.13),
-                new THREE.Vector3(0.25, 0.005, -0.11)
-            ]);
-            const rightLimbCurve = new THREE.CatmullRomCurve3([
-                new THREE.Vector3(-0.01, 0.02, -0.09),
-                new THREE.Vector3(-0.035, 0.02, -0.1),
-                new THREE.Vector3(-0.09, 0.02, -0.13),
-                new THREE.Vector3(-0.25, 0.005, -0.11)
-            ]);
-            function createTaperedLimb(curve) {
-                return new THREE.Mesh(
-                    new THREE.TubeGeometry(curve, 32, 0.013, 16, false),
-                    new THREE.MeshPhongMaterial({ color: 0xB8860B, shininess: 80 })
-                );
-            }
-            const leftLimb = createTaperedLimb(leftLimbCurve);
-            const rightLimb = createTaperedLimb(rightLimbCurve);
-            group.add(leftLimb);
-            group.add(rightLimb);
-
-            // String
-            const stringCurveSag = new THREE.CatmullRomCurve3([
-                new THREE.Vector3(-0.25, 0.005, -0.11),
-                new THREE.Vector3(0, 0.03, 0.12),
-                new THREE.Vector3(0.25, 0.005, -0.11)
-            ]);
-            let bowStringGeometry = new THREE.TubeGeometry(stringCurveSag, 2, 0.001, 8, false);
-            const stringMaterial = new THREE.MeshPhongMaterial({ color: 0x888888, shininess: 50 });
-            const bowString = new THREE.Mesh(bowStringGeometry, stringMaterial);
-            group.add(bowString);
-
-            // Trigger guard
-            const triggerGeometry = new THREE.TorusGeometry(0.02, 0.005, 5, 100, Math.PI);
-            const metalMaterial = new THREE.MeshPhongMaterial({ color: 0x00ff00, shininess: 100 });
-            const triggerGuard = new THREE.Mesh(triggerGeometry, metalMaterial);
-            triggerGuard.position.set(0, -0.015, 0.05);
-            triggerGuard.rotation.x = Math.PI / 2;
-            group.add(triggerGuard);
-
-            // Grip
-            const gripGeometry = new THREE.CylinderGeometry(0.01, 0.01, 0.04, 32);
-            const grip = new THREE.Mesh(gripGeometry, bodyMaterial);
-            grip.position.set(0, -0.02, 0.03);
-            grip.rotation.x = Math.PI / 2;
-            group.add(grip);
-
-            // Loaded arrow
-            loadedArrow = new THREE.Group();
-            const loadedShaft = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.003, 0.003, 0.2, 32),
-                new THREE.MeshPhongMaterial({ color: 0xFFD700, shininess: 50 })
-            );
-            const arrowTipMaterial = new THREE.MeshPhongMaterial({ color: 0x888888, shininess: 100 });
-            const loadedTip = new THREE.Mesh(
-                new THREE.ConeGeometry(0.005, -0.012, 22),
-                arrowTipMaterial
-            );
-            loadedTip.position.set(0, -0.09, -0.002);
-            loadedArrow.add(loadedShaft);
-            loadedArrow.add(loadedTip);
-            loadedArrow.position.set(0, 0.03, 0.015);
-            loadedArrow.rotation.x = Math.PI / 2;
-            loadedArrow.visible = true;
-            group.add(loadedArrow);
-
-            // Position crossbow in front of camera
-            group.position.set(0, -0.01, -0.5);
-            group.rotation.set(0, 0.022, 0);
-
+            // Instead of adding stick to group, add it to the scene for static behavior
+            // group.add(stick); // REMOVE or comment out this line
+            // We'll add stick to the scene in initScene()
+            // ...existing code...
             return group;
         }
 
@@ -240,6 +169,9 @@
             crossbowGroup = createCrossbowGroup(textureLoader);
             crossbowGroup.visible = false;
             scene.add(crossbowGroup);
+
+            // Add stick directly to the scene for static behavior
+            scene.add(stick);
         }
 
         // Shooting logic variables
@@ -372,14 +304,22 @@
                 crossbowGroup.position.copy(camera.position).add(offset);
                 crossbowGroup.quaternion.copy(camera.quaternion);
             }
+
+            // Keep stick static in world space (not affected by crossbowGroup rotation)
+            if (stick) {
+                stick.position.set(-0.006, 0.032, 0.13);
+                stick.rotation.set(0, 0, 0);
+            }
+
             if (target && target.visible) {
                 renderer.xr.getCamera(camera);
                 const dist = target.position.distanceTo(camera.position);
                 // 0.15 at 2m, 0.3 at 4m, 0.45 at 6m, etc. (linear scaling)
                 const baseScale = 0.5;
-                const scale = baseScale  / dist *  3;
+                const scale = baseScale / dist * 2;
                 target.scale.setScalar(scale);
             }
+
             // Arrow movement logic
             if (arrow && isShooting) {
                 arrow.position.x += arrowVelocity.x * 0.016;
