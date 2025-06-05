@@ -60,11 +60,13 @@
 
     <div id="unsupported">AR not supported on this device/browser.</div>
     <!-- Scoreboard -->
-    <div id="scoreboard" style="position:absolute;top:10px;left:10px;background:rgba(30,144,255,0.8);color:#fff;padding:0.7em 1.2em;border-radius:0.6em;font-size:1.2em;z-index:100;">
+    <div id="scoreboard"
+        style="position:absolute;top:10px;left:10px;background:rgba(30,144,255,0.8);color:#fff;padding:0.7em 1.2em;border-radius:0.6em;font-size:1.2em;z-index:100;">
         Score: <span id="score">0</span>
     </div>
     <!-- Shoot Button -->
-    <button id="shoot-btn" style="position: absolute; bottom: 30px; right: 30px; z-index: 101; font-size: 2em; padding: 0.5em 1.2em; border-radius: 0.5em; border: none; background: #1e90ff; color: white; opacity: 0.85; box-shadow: 0 2px 8px rgba(0,0,0,0.2); display: none;">Shoot</button>
+    <button id="shoot-btn"
+        style="position: absolute; bottom: 30px; right: 30px; z-index: 101; font-size: 2em; padding: 0.5em 1.2em; border-radius: 0.5em; border: none; background: #1e90ff; color: white; opacity: 0.85; box-shadow: 0 2px 8px rgba(0,0,0,0.2); display: none;">Shoot</button>
     <script src="https://unpkg.com/three@0.134.0/build/three.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r169/three.min.js"></script>
     <script>
@@ -131,9 +133,10 @@
             const stickGeometry = new THREE.CylinderGeometry(0.0008, 0.0008, 0.045, 32);
             const stickMaterial = new THREE.MeshPhongMaterial({ color: 0xff0000, shininess: 100 });
             stick = new THREE.Mesh(stickGeometry, stickMaterial);
-            // Set stick position statically relative to crossbow body
+            // Set stick position statically relative to world, not affected by crossbowGroup movement
             stick.position.set(-0.006, 0.032, 0.13);
-            stick.matrixAutoUpdate = false; // Prevent automatic updates
+            stick.userData.staticWorldPosition = stick.position.clone();
+            stick.userData.staticWorldQuaternion = stick.quaternion.clone();
             group.add(stick);
 
             // Limbs
@@ -372,23 +375,24 @@
                 crossbowGroup.position.copy(camera.position).add(offset);
                 crossbowGroup.quaternion.copy(camera.quaternion);
 
-                // Keep stick's position and orientation fixed relative to crossbow
-                stick.matrix.identity();
-                stick.position.set(-0.006, 0.032, 0.13);
-                stick.rotation.set(0, 0, 0);
-                stick.updateMatrix();
+                // Keep stick's position and orientation fixed in world space
+                if (stick) {
+                    stick.matrixAutoUpdate = false;
+                    stick.matrix.identity();
+                    stick.position.copy(stick.userData.staticWorldPosition);
+                    stick.quaternion.copy(stick.userData.staticWorldQuaternion);
+                    stick.updateMatrix();
+                }
             }
 
-            // Scale target based on distance to camera
             if (target && target.visible) {
                 renderer.xr.getCamera(camera);
                 const dist = target.position.distanceTo(camera.position);
                 // 0.15 at 2m, 0.3 at 4m, 0.45 at 6m, etc. (linear scaling)
-                const baseScale = 0.15;
-                const scale = baseScale * dist / 2;
+                const baseScale = 0.5;
+                const scale = baseScale  / dist*  2;
                 target.scale.setScalar(scale);
             }
-
             // Arrow movement logic
             if (arrow && isShooting) {
                 arrow.position.x += arrowVelocity.x * 0.016;
