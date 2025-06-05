@@ -382,12 +382,10 @@
                 crossbowGroup.rotation.x = 0; // pitch (up/down)
                 crossbowGroup.rotation.y = euler.y;
                 crossbowGroup.rotation.z = 0 ;
-const maxYaw = THREE.MathUtils.degToRad(45);
-                if (crossbowGroup.position.y > (maxYaw * 2) || crossbowGroup.position.y < -(maxYaw * 2)) {
-                    // Reset to fixed offset and orientation
-                    const offset = new THREE.Vector3(0, -0.03, -0.3);
-                    offset.applyQuaternion(camera.quaternion);
-                    crossbowGroup.position.copy(camera.position).add(offset);
+ if (euler.y > 1 || euler.y < -1) {
+                    const fixedOffset = new THREE.Vector3(0, -0.03, -0.3);
+                    fixedOffset.applyQuaternion(camera.quaternion);
+                    crossbowGroup.position.copy(camera.position).add(fixedOffset);
                     crossbowGroup.quaternion.copy(camera.quaternion);
                 }
 
