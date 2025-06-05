@@ -392,9 +392,9 @@
                 // Adjust crossbow rotation: follow camera's up/down (pitch) and left/right (yaw) by setting rotation.y and rotation.z
                 // Get camera's Euler angles
                 const euler = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ');
-               crossbowGroup.rotation.x = 0; // pitch (up/down)
+              // crossbowGroup.rotation.x = 0; // pitch (up/down)
                 crossbowGroup.rotation.y = euler.y;
-                crossbowGroup.rotation.z = 0;
+               // crossbowGroup.rotation.z = 0;
              const ratio = crossbowGroup.position.y !== 0 ? crossbowGroup.rotation.y / crossbowGroup.position.y : 0;
                 if (ratio < 1 ) {
                     const fixedOffset = new THREE.Vector3(0, -0.05, -0.3);
