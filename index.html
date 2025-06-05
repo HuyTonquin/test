@@ -190,40 +190,45 @@
                 document.getElementById('unsupported').style.display = 'block';
                 return;
             }
-            xrSession = await navigator.xr.requestSession('immersive-ar', {
-                requiredFeatures: ['hit-test', 'local-floor']
-            });
-            renderer.xr.setSession(xrSession);
+            try {
+                xrSession = await navigator.xr.requestSession('immersive-ar', {
+                    requiredFeatures: ['hit-test', 'local-floor']
+                });
+                renderer.xr.setSession(xrSession);
 
-            xrRefSpace = await xrSession.requestReferenceSpace('local-floor');
-            xrViewerSpace = await xrSession.requestReferenceSpace('viewer');
-            xrHitTestSource = await xrSession.requestHitTestSource({ space: xrViewerSpace });
+                xrRefSpace = await xrSession.requestReferenceSpace('local-floor');
+                xrViewerSpace = await xrSession.requestReferenceSpace('viewer');
+                xrHitTestSource = await xrSession.requestHitTestSource({ space: xrViewerSpace });
 
-            document.getElementById('enter-ar').style.display = 'none';
+                document.getElementById('enter-ar').style.display = 'none';
 
-            renderer.setAnimationLoop(renderAR);
+                renderer.setAnimationLoop(renderAR);
 
-            xrSession.addEventListener('end', () => {
-                document.getElementById('enter-ar').style.display = 'block';
-                if (renderer.domElement.parentNode) {
-                    renderer.domElement.parentNode.removeChild(renderer.domElement);
-                }
-                xrHitTestSource = null;
-                xrViewerSpace = null;
-                xrRefSpace = null;
-                xrSession = null;
-            });
+                xrSession.addEventListener('end', () => {
+                    document.getElementById('enter-ar').style.display = 'block';
+                    if (renderer.domElement.parentNode) {
+                        renderer.domElement.parentNode.removeChild(renderer.domElement);
+                    }
+                    xrHitTestSource = null;
+                    xrViewerSpace = null;
+                    xrRefSpace = null;
+                    xrSession = null;
+                });
 
-            renderer.domElement.addEventListener('click', () => {
-                if (reticle.visible) {
-                    cube.position.setFromMatrixPosition(reticle.matrix);
-                    cube.visible = true;
-                    // Place crossbow at the same position as the cube
-                    crossbowGroup.position.copy(cube.position);
-                    crossbowGroup.position.y += 0.05; // Slightly above the surface
-                    crossbowGroup.visible = true;
-                }
-            });
+                renderer.domElement.addEventListener('click', () => {
+                    if (reticle.visible) {
+                        cube.position.setFromMatrixPosition(reticle.matrix);
+                        cube.visible = true;
+                        // Place crossbow at the same position as the cube
+                        crossbowGroup.position.copy(cube.position);
+                        crossbowGroup.position.y += 0.05; // Slightly above the surface
+                        crossbowGroup.visible = true;
+                    }
+                });
+            } catch (e) {
+                document.getElementById('unsupported').style.display = 'block';
+                document.getElementById('enter-ar').style.display = 'none';
+            }
         }
 
         function renderAR(timestamp, frame) {
