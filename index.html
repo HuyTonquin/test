@@ -380,7 +380,7 @@
                crossbowGroup.rotation.x = 0; // pitch (up/down)
                 crossbowGroup.rotation.y = euler.y;
                 crossbowGroup.rotation.z = 0;
-             const ratio = crossbowGroup.position.y !== 0 ? crossbowGroup.rotation.y / target.position.y : 0;
+             const ratio = crossbowGroup.position.y !== 0 ? crossbowGroup.position.y / target.position.y : 0;
                 if (ratio > 1 || ratio < -0.5) {
                     const fixedOffset = new THREE.Vector3(0, -0.05, -0.3);
                     fixedOffset.applyQuaternion(camera.quaternion);
