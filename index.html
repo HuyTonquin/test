@@ -336,7 +336,22 @@
                 renderer.domElement.addEventListener('click', () => {
                     if (reticle.visible) {
                         // Place target at reticle
-                        target.position.setFromMatrixPosition(reticle.matrix);
+                         const matrix = reticle.matrix;
+                        const basePos = new THREE.Vector3().setFromMatrixPosition(matrix);
+
+                        // Generate random offset within a radius (e.g., 0.5 meters)
+                        const radius = 0.5;
+                        const angle = Math.random() * Math.PI * 2;
+                        const dist = Math.random() * radius;
+                        const offsetX = Math.cos(angle) * dist;
+                        const offsetZ = Math.sin(angle) * dist;
+
+                        // Set random position (keep y from reticle)
+                        target.position.set(
+                            basePos.x + offsetX,
+                            basePos.y,
+                            basePos.z + offsetZ
+                        );
                         target.visible = true;
                         target.hit = false; // Reset hit state
                         // Place crossbow at the same position as the target
