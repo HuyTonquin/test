@@ -57,6 +57,42 @@
 
         // Crossbow group variables
         let crossbowGroup, stick, loadedArrow;
+        let target = null; // Replace cube with target
+
+        function createBullseyeTexture() {
+            const size = 256;
+            const canvas = document.createElement('canvas');
+            canvas.width = canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(size / 2, size / 2, size / 2, 0, 2 * Math.PI); ctx.fill();
+            ctx.fillStyle = '#ff2222';
+            ctx.beginPath();
+            ctx.arc(size / 2, size / 2, size / 2 * 0.8, 0, 2 * Math.PI); ctx.fill();
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(size / 2, size / 2, size / 2 * 0.55, 0, 2 * Math.PI); ctx.fill();
+            ctx.fillStyle = '#2222ff';
+            ctx.beginPath();
+            ctx.arc(size / 2, size / 2, size / 2 * 0.35, 0, 2 * Math.PI); ctx.fill();
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(size / 2, size / 2, size / 2 * 0.18, 0, 2 * Math.PI); ctx.fill();
+            ctx.fillStyle = '#ff2222';
+            ctx.beginPath();
+            ctx.arc(size / 2, size / 2, size / 2 * 0.09, 0, 2 * Math.PI); ctx.fill();
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        function createTarget() {
+            const geometry = new THREE.CylinderGeometry(0.15, 0.15, 0.08, 64);
+            const material = new THREE.MeshPhongMaterial({ map: createBullseyeTexture(), shininess: 30 });
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.rotation.x = Math.PI / 2;
+            mesh.visible = false;
+            return mesh;
+        }
 
         function createCrossbowGroup(textureLoader) {
             const group = new THREE.Group();
@@ -160,12 +196,9 @@
             renderer.xr.enabled = true;
             document.body.appendChild(renderer.domElement);
 
-            // Add a red cube (will be placed on surface)
-            const geometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
-            const material = new THREE.MeshPhongMaterial({ color: 0xff0000 });
-            cube = new THREE.Mesh(geometry, material);
-            cube.visible = false;
-            scene.add(cube);
+            // Target (replaces cube)
+            target = createTarget();
+            scene.add(target);
 
             // Add a reticle to show placement
             const ringGeo = new THREE.RingGeometry(0.07, 0.09, 32).rotateX(-Math.PI / 2);
@@ -226,7 +259,7 @@
 
             // Set velocity in forward direction
             const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(crossbowGroup.quaternion).normalize();
-            const baseSpeed = 5.5;
+            const baseSpeed = 5.9;
             arrowVelocity.copy(direction).multiplyScalar(baseSpeed);
         }
 
@@ -270,10 +303,11 @@
 
                 renderer.domElement.addEventListener('click', () => {
                     if (reticle.visible) {
-                        cube.position.setFromMatrixPosition(reticle.matrix);
-                        cube.visible = true;
-                        // Place crossbow at the same position as the cube
-                        crossbowGroup.position.copy(cube.position);
+                        // Place target at reticle
+                        target.position.setFromMatrixPosition(reticle.matrix);
+                        target.visible = true;
+                        // Place crossbow at the same position as the target
+                        crossbowGroup.position.copy(target.position);
                         crossbowGroup.position.y += 0.05; // Slightly above the surface
                         crossbowGroup.visible = true;
                         enableShooting();
@@ -304,9 +338,7 @@
 
             // Move crossbow group with camera if visible
             if (crossbowGroup && crossbowGroup.visible && renderer.xr.isPresenting) {
-                // Get camera's world position and quaternion
                 renderer.xr.getCamera(camera);
-                // Offset crossbow in front of camera
                 const offset = new THREE.Vector3(0, -0.05, -0.4);
                 offset.applyQuaternion(camera.quaternion);
                 crossbowGroup.position.copy(camera.position).add(offset);
@@ -318,7 +350,6 @@
                 arrow.position.x += arrowVelocity.x * 0.016;
                 arrow.position.y += arrowVelocity.y * 0.016;
                 arrow.position.z += arrowVelocity.z * 0.016;
-                // Optional: gravity effect
                 arrowVelocity.y -= 0.981 * 0.016;
 
                 // Orient arrow in velocity direction
@@ -328,12 +359,21 @@
                     arrow.rotateX(Math.PI / 2);
                 }
 
-                // Remove arrow if too far or below ground
-                if (arrow.position.distanceTo(camera.position) > 10 || arrow.position.y < -1) {
+                // Hit detection with target
+                if (target && target.visible && arrow.position.distanceTo(target.position) < 0.18) {
                     scene.remove(arrow);
                     arrow = null;
                     isShooting = false;
-                    // Show loaded arrow again after reload
+                    target.visible = false;
+                    setTimeout(() => {
+                        if (loadedArrow) loadedArrow.visible = true;
+                    }, reloadTime * 1000);
+                }
+                // Remove arrow if too far or below ground
+                else if (arrow && (arrow.position.distanceTo(camera.position) > 10 || arrow.position.y < -1)) {
+                    scene.remove(arrow);
+                    arrow = null;
+                    isShooting = false;
                     setTimeout(() => {
                         if (loadedArrow) loadedArrow.visible = true;
                     }, reloadTime * 1000);
