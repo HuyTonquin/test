@@ -288,7 +288,7 @@
 
             // Set velocity in forward direction
             const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(crossbowGroup.quaternion).normalize();
-            const baseSpeed = 7.0;
+            const baseSpeed = 10;
             arrowVelocity.copy(direction).multiplyScalar(baseSpeed);
         }
 
