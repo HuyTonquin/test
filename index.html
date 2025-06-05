@@ -39,6 +39,19 @@
             text-align: center;
             display: none;
         }
+
+        /* Scoreboard styles */
+        #scoreboard {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(30, 144, 255, 0.8);
+            color: #fff;
+            padding: 0.7em 1.2em;
+            border-radius: 0.6em;
+            font-size: 1.2em;
+            z-index: 100;
+        }
     </style>
 </head>
 
@@ -46,6 +59,12 @@
     <button id="enter-ar">Enter AR</button>
 
     <div id="unsupported">AR not supported on this device/browser.</div>
+    <!-- Scoreboard -->
+    <div id="scoreboard" style="position:absolute;top:10px;left:10px;background:rgba(30,144,255,0.8);color:#fff;padding:0.7em 1.2em;border-radius:0.6em;font-size:1.2em;z-index:100;">
+        Score: <span id="score">0</span>
+    </div>
+    <!-- Shoot Button -->
+    <button id="shoot-btn" style="position: absolute; bottom: 30px; right: 30px; z-index: 101; font-size: 2em; padding: 0.5em 1.2em; border-radius: 0.5em; border: none; background: #1e90ff; color: white; opacity: 0.85; box-shadow: 0 2px 8px rgba(0,0,0,0.2); display: none;">Shoot</button>
     <script src="https://unpkg.com/three@0.134.0/build/three.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r169/three.min.js"></script>
     <script>
@@ -57,7 +76,9 @@
 
         // Crossbow group variables
         let crossbowGroup, stick, loadedArrow;
+
         let target = null; // Replace cube with target
+        let score = 0;
 
         function createBullseyeTexture() {
             const size = 256;
@@ -91,6 +112,7 @@
             const mesh = new THREE.Mesh(geometry, material);
             mesh.rotation.x = Math.PI / 2;
             mesh.visible = false;
+            mesh.hit = false; // Add hit property
             return mesh;
         }
 
@@ -263,12 +285,14 @@
             arrowVelocity.copy(direction).multiplyScalar(baseSpeed);
         }
 
-        // Add shooting event for AR
+        // Add shooting event for AR (only via button)
         function enableShooting() {
-            renderer.domElement.addEventListener('click', shootArrow);
+            document.getElementById('shoot-btn').style.display = 'block';
+            document.getElementById('shoot-btn').addEventListener('click', shootArrow);
         }
         function disableShooting() {
-            renderer.domElement.removeEventListener('click', shootArrow);
+            document.getElementById('shoot-btn').style.display = 'none';
+            document.getElementById('shoot-btn').removeEventListener('click', shootArrow);
         }
 
         async function onEnterAR() {
@@ -299,6 +323,7 @@
                     xrViewerSpace = null;
                     xrRefSpace = null;
                     xrSession = null;
+                    disableShooting();
                 });
 
                 renderer.domElement.addEventListener('click', () => {
@@ -306,6 +331,7 @@
                         // Place target at reticle
                         target.position.setFromMatrixPosition(reticle.matrix);
                         target.visible = true;
+                        target.hit = false; // Reset hit state
                         // Place crossbow at the same position as the target
                         crossbowGroup.position.copy(target.position);
                         crossbowGroup.position.y += 0.05; // Slightly above the surface
@@ -360,11 +386,14 @@
                 }
 
                 // Hit detection with target
-                if (target && target.visible && arrow.position.distanceTo(target.position) < 0.18) {
+                if (target && target.visible && !target.hit && arrow.position.distanceTo(target.position) < 0.18) {
                     scene.remove(arrow);
                     arrow = null;
                     isShooting = false;
                     target.visible = false;
+                    target.hit = true; // Mark as hit
+                    score += 10;
+                    document.getElementById('score').textContent = score;
                     setTimeout(() => {
                         if (loadedArrow) loadedArrow.visible = true;
                     }, reloadTime * 1000);
