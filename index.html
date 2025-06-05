@@ -134,7 +134,8 @@
             const stickMaterial = new THREE.MeshPhongMaterial({ color: 0xff0000, shininess: 100 });
             stick = new THREE.Mesh(stickGeometry, stickMaterial);
             stick.position.set(-0.006, 0.032, 0.13);
-            group.add(stick);
+            // Do NOT add stick to group here
+            // group.add(stick);
 
             // Limbs
             const leftLimbCurve = new THREE.CatmullRomCurve3([
@@ -206,7 +207,7 @@
             group.add(loadedArrow);
 
             // Position crossbow in front of camera
-            group.position.set(0, -0.01, -0.5);
+            group.position.set(0, -0.05, -0.4);
             group.rotation.set(0, 0.022, 0);
 
             return group;
@@ -240,6 +241,10 @@
             crossbowGroup = createCrossbowGroup(textureLoader);
             crossbowGroup.visible = false;
             scene.add(crossbowGroup);
+
+            // Add stick as a separate object in the scene
+            scene.add(stick);
+            stick.visible = false;
         }
 
         // Shooting logic variables
@@ -371,13 +376,24 @@
                 offset.applyQuaternion(camera.quaternion);
                 crossbowGroup.position.copy(camera.position).add(offset);
                 crossbowGroup.quaternion.copy(camera.quaternion);
+
+                // --- Stick static logic ---
+                // Compute stick's world position as if it was attached to crossbowGroup, but do NOT rotate it
+                // Use the stick's local position in crossbowGroup
+                const stickLocalPos = new THREE.Vector3(-0.006, 0.032, 0.13);
+                // Apply only crossbowGroup's position (not rotation)
+                stick.position.copy(crossbowGroup.position).add(stickLocalPos);
+                stick.rotation.set(0, 0, 0); // Keep stick unrotated (static)
+                stick.visible = true;
+            } else {
+                stick.visible = false;
             }
             if (target && target.visible) {
                 renderer.xr.getCamera(camera);
                 const dist = target.position.distanceTo(camera.position);
                 // 0.15 at 2m, 0.3 at 4m, 0.45 at 6m, etc. (linear scaling)
                 const baseScale = 0.5;
-                const scale = baseScale  / dist *  3;
+                const scale = baseScale  / dist*  2;
                 target.scale.setScalar(scale);
             }
             // Arrow movement logic
