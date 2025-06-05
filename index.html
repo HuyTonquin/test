@@ -383,8 +383,8 @@
                  if (
                     crossbowGroup.position.y !== 0 && // avoid division by zero
                     (
-                        (crossbowGroup.rotation.y / crossbowGroup.position.y) > 1.5 ||
-                        (crossbowGroup.rotation.y / crossbowGroup.position.y) < -1.5
+                        (crossbowGroup.rotation.y / target.position.y) > 1 ||
+                        (crossbowGroup.rotation.y / target.position.y) < -1
                     )
                 ) {
                     const fixedOffset = new THREE.Vector3(0, -0.05, -0.4);
