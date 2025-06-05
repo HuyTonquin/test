@@ -383,7 +383,7 @@
                 crossbowGroup.rotation.y = euler.y;
                 crossbowGroup.rotation.z = 0 ;
 const maxYaw = THREE.MathUtils.degToRad(45);
-                if (crossbowGroup.rotation.z > maxYaw || crossbowGroup.rotation.z < -maxYaw) {
+                if (crossbowGroup.rotation.y > maxYaw || crossbowGroup.rotation.y < -maxYaw) {
                     // Reset to fixed offset and orientation
                     const offset = new THREE.Vector3(0, -0.05, -0.4);
                     offset.applyQuaternion(camera.quaternion);
