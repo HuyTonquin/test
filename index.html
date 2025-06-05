@@ -185,6 +185,59 @@
             scene.add(crossbowGroup);
         }
 
+        // Shooting logic variables
+        let arrow = null;
+        let arrowVelocity = new THREE.Vector3();
+        let isShooting = false;
+        let lastShotTime = -Infinity;
+        const reloadTime = 1.2; // seconds
+
+        // Add shoot event listener in AR
+        function shootArrow() {
+            if (!crossbowGroup || !crossbowGroup.visible) return;
+            const now = performance.now() / 1000;
+            if (isShooting || now - lastShotTime < reloadTime) return;
+            isShooting = true;
+            lastShotTime = now;
+
+            // Hide loaded arrow if present
+            if (loadedArrow) loadedArrow.visible = false;
+
+            // Create arrow mesh
+            arrow = new THREE.Group();
+            const shaft = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.005, 0.005, 0.08, 12),
+                new THREE.MeshPhongMaterial({ color: 0xFFD700, shininess: 50 })
+            );
+            const tip = new THREE.Mesh(
+                new THREE.ConeGeometry(0.01, 0.08, 12),
+                new THREE.MeshPhongMaterial({ color: 0x888888, shininess: 100 })
+            );
+            tip.position.set(0, 0.08, 0);
+            arrow.add(shaft);
+            arrow.add(tip);
+
+            // Place arrow at crossbow tip
+            crossbowGroup.updateMatrixWorld();
+            const tipWorld = new THREE.Vector3(0, 0.03, 0.15).applyMatrix4(crossbowGroup.matrixWorld);
+            arrow.position.copy(tipWorld);
+            arrow.quaternion.copy(crossbowGroup.quaternion);
+            scene.add(arrow);
+
+            // Set velocity in forward direction
+            const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(crossbowGroup.quaternion).normalize();
+            const baseSpeed = 5.5;
+            arrowVelocity.copy(direction).multiplyScalar(baseSpeed);
+        }
+
+        // Add shooting event for AR
+        function enableShooting() {
+            renderer.domElement.addEventListener('click', shootArrow);
+        }
+        function disableShooting() {
+            renderer.domElement.removeEventListener('click', shootArrow);
+        }
+
         async function onEnterAR() {
             if (!navigator.xr) {
                 document.getElementById('unsupported').style.display = 'block';
@@ -223,6 +276,7 @@
                         crossbowGroup.position.copy(cube.position);
                         crossbowGroup.position.y += 0.05; // Slightly above the surface
                         crossbowGroup.visible = true;
+                        enableShooting();
                     }
                 });
             } catch (e) {
@@ -257,6 +311,33 @@
                 offset.applyQuaternion(camera.quaternion);
                 crossbowGroup.position.copy(camera.position).add(offset);
                 crossbowGroup.quaternion.copy(camera.quaternion);
+            }
+
+            // Arrow movement logic
+            if (arrow && isShooting) {
+                arrow.position.x += arrowVelocity.x * 0.016;
+                arrow.position.y += arrowVelocity.y * 0.016;
+                arrow.position.z += arrowVelocity.z * 0.016;
+                // Optional: gravity effect
+                arrowVelocity.y -= 0.981 * 0.016;
+
+                // Orient arrow in velocity direction
+                const velocityDirection = arrowVelocity.clone().normalize();
+                if (velocityDirection.lengthSq() > 0) {
+                    arrow.lookAt(arrow.position.clone().add(velocityDirection));
+                    arrow.rotateX(Math.PI / 2);
+                }
+
+                // Remove arrow if too far or below ground
+                if (arrow.position.distanceTo(camera.position) > 10 || arrow.position.y < -1) {
+                    scene.remove(arrow);
+                    arrow = null;
+                    isShooting = false;
+                    // Show loaded arrow again after reload
+                    setTimeout(() => {
+                        if (loadedArrow) loadedArrow.visible = true;
+                    }, reloadTime * 1000);
+                }
             }
 
             renderer.render(scene, camera);
