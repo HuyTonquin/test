@@ -372,7 +372,7 @@
             // Move crossbow group with camera if visible
             if (crossbowGroup && crossbowGroup.visible && renderer.xr.isPresenting) {
                 renderer.xr.getCamera(camera);
-                const offset = new THREE.Vector3(0, -0.03, -0.3);
+                const offset = new THREE.Vector3(0, -0.05, -0.3);
                 offset.applyQuaternion(camera.quaternion);
                 crossbowGroup.position.copy(camera.position).add(offset);
                 crossbowGroup.quaternion.copy(camera.quaternion);
@@ -385,7 +385,7 @@
                 const stickWorldPos = stickLocalPos.clone().applyQuaternion(crossbowGroup.quaternion).add(crossbowGroup.position);
                 stick.position.copy(stickWorldPos);
                 // Stick rotation: static except for x, which is -crossbowGroup.rotation.x (as in crtest2.html)
-                stick.rotation.set(0, -crossbowGroup.rotation.y, 0);
+                stick.rotation.set(-0.002, crossbowGroup.rotation.y, 0);
                 stick.visible = true;
             } else {
                 stick.visible = false;
@@ -395,7 +395,7 @@
                 const dist = target.position.distanceTo(camera.position);
                 // 0.15 at 2m, 0.3 at 4m, 0.45 at 6m, etc. (linear scaling)
                 const baseScale = 0.5;
-                const scale = baseScale  / dist*  3.5;
+                const scale = baseScale  / dist * 4;
                 target.scale.setScalar(scale);
             }
             // Arrow movement logic
