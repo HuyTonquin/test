@@ -131,7 +131,9 @@
             const stickGeometry = new THREE.CylinderGeometry(0.0008, 0.0008, 0.045, 32);
             const stickMaterial = new THREE.MeshPhongMaterial({ color: 0xff0000, shininess: 100 });
             stick = new THREE.Mesh(stickGeometry, stickMaterial);
+            // Set stick position statically relative to crossbow body
             stick.position.set(-0.006, 0.032, 0.13);
+            stick.matrixAutoUpdate = false; // Prevent automatic updates
             group.add(stick);
 
             // Limbs
@@ -369,6 +371,22 @@
                 offset.applyQuaternion(camera.quaternion);
                 crossbowGroup.position.copy(camera.position).add(offset);
                 crossbowGroup.quaternion.copy(camera.quaternion);
+
+                // Keep stick's position and orientation fixed relative to crossbow
+                stick.matrix.identity();
+                stick.position.set(-0.006, 0.032, 0.13);
+                stick.rotation.set(0, 0, 0);
+                stick.updateMatrix();
+            }
+
+            // Scale target based on distance to camera
+            if (target && target.visible) {
+                renderer.xr.getCamera(camera);
+                const dist = target.position.distanceTo(camera.position);
+                // 0.15 at 2m, 0.3 at 4m, 0.45 at 6m, etc. (linear scaling)
+                const baseScale = 0.15;
+                const scale = baseScale * dist / 2;
+                target.scale.setScalar(scale);
             }
 
             // Arrow movement logic
@@ -386,7 +404,7 @@
                 }
 
                 // Hit detection with target
-                if (target && target.visible && !target.hit && arrow.position.distanceTo(target.position) < 0.18) {
+                if (target && target.visible && !target.hit && arrow.position.distanceTo(target.position) < 0.12) {
                     scene.remove(arrow);
                     arrow = null;
                     isShooting = false;
