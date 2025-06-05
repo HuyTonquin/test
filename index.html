@@ -372,7 +372,7 @@
             // Move crossbow group with camera if visible
             if (crossbowGroup && crossbowGroup.visible && renderer.xr.isPresenting) {
                 renderer.xr.getCamera(camera);
-                const offset = new THREE.Vector3(0, -0.05, -0.1);
+                const offset = new THREE.Vector3(0, -0.03, -0.3);
                 offset.applyQuaternion(camera.quaternion);
                 crossbowGroup.position.copy(camera.position).add(offset);
                 crossbowGroup.quaternion.copy(camera.quaternion);
@@ -380,7 +380,7 @@
                 // --- Stick static logic (like crtest2.html) ---
                 // Stick follows crossbow position, but rotation.x is static
                 // Use the stick's local position in crossbowGroup
-                const stickLocalPos = new THREE.Vector3(-0.006, 0.032, 0.13);
+                const stickLocalPos = new THREE.Vector3(-0.002, 0.032, 0.13);
                 // Get world position of stick as if attached to crossbowGroup
                 const stickWorldPos = stickLocalPos.clone().applyQuaternion(crossbowGroup.quaternion).add(crossbowGroup.position);
                 stick.position.copy(stickWorldPos);
