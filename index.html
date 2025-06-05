@@ -384,11 +384,11 @@
                     fixedOffset.applyQuaternion(camera.quaternion);
                     crossbowGroup.position.copy(camera.position).add(fixedOffset);
                     crossbowGroup.quaternion.copy(camera.quaternion);
-                }
+                } else {
                      crossbowGroup.rotation.x = 0; // pitch (up/down)
                 crossbowGroup.rotation.y = euler.y;
                 crossbowGroup.rotation.z = 0;
-                
+                }
 
                 // --- Stick follows crossbow position only ---
                 const stickLocalPos = new THREE.Vector3(-0.002, 0.032, 0.13);
