@@ -385,7 +385,7 @@
                 const dist = target.position.distanceTo(camera.position);
                 // 0.15 at 2m, 0.3 at 4m, 0.45 at 6m, etc. (linear scaling)
                 const baseScale = 0.5;
-                const scale = baseScale  / dist*  2;
+                const scale = baseScale  / dist* 3.5;
                 target.scale.setScalar(scale);
             }
             // Arrow movement logic
