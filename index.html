@@ -247,6 +247,18 @@
                     reticle.visible = false;
                 }
             }
+
+            // Move crossbow group with camera if visible
+            if (crossbowGroup && crossbowGroup.visible && renderer.xr.isPresenting) {
+                // Get camera's world position and quaternion
+                renderer.xr.getCamera(camera);
+                // Offset crossbow in front of camera
+                const offset = new THREE.Vector3(0, -0.05, -0.4);
+                offset.applyQuaternion(camera.quaternion);
+                crossbowGroup.position.copy(camera.position).add(offset);
+                crossbowGroup.quaternion.copy(camera.quaternion);
+            }
+
             renderer.render(scene, camera);
         }
 
