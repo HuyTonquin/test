@@ -377,19 +377,17 @@
                 // Adjust crossbow rotation: follow camera's up/down (pitch) and left/right (yaw) by setting rotation.y and rotation.z
                 // Get camera's Euler angles
                 const euler = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ');
-              
-             const ratio = crossbowGroup.position.y !== 0 ? crossbowGroup.rotation.y / crossbowGroup.position.y : 0;
-                if (ratio > 0.5 || ratio < -0.5) {
-                    const fixedOffset = new THREE.Vector3(0, -0.05, -0.4);
+               crossbowGroup.rotation.x = 0; // pitch (up/down)
+                crossbowGroup.rotation.y = euler.y;
+                crossbowGroup.rotation.z = 0;
+             const ratio = crossbowGroup.position.y !== 0 ? crossbowGroup.rotation.y / target.position.y : 0;
+                if (ratio > 1 || ratio < -0.5) {
+                    const fixedOffset = new THREE.Vector3(0, -0.05, -0.3);
                     fixedOffset.applyQuaternion(camera.quaternion);
                     crossbowGroup.position.copy(camera.position).add(fixedOffset);
                     crossbowGroup.quaternion.copy(camera.quaternion);
-                } else {
-                     crossbowGroup.rotation.x = 0; // pitch (up/down)
-                crossbowGroup.rotation.y = euler.y;
-                crossbowGroup.rotation.z = 0;
-                }
-
+                } 
+                    
                 // --- Stick follows crossbow position only ---
                 const stickLocalPos = new THREE.Vector3(-0.002, 0.032, 0.13);
                 const stickWorldPos = stickLocalPos.clone().applyQuaternion(crossbowGroup.quaternion).add(crossbowGroup.position);
