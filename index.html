@@ -381,7 +381,7 @@
                 const euler = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ');
                 crossbowGroup.rotation.x = 0; // keep original
                 crossbowGroup.rotation.y = euler.x; // pitch (up/down)
-                crossbowGroup.rotation.z = euler.y; // yaw (left/right)
+                //crossbowGroup.rotation.z = euler.y; // yaw (left/right)
 
                 // --- Stick follows crossbow position only ---
                 const stickLocalPos = new THREE.Vector3(-0.002, 0.032, 0.13);
