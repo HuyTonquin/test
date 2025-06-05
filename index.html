@@ -133,10 +133,7 @@
             const stickGeometry = new THREE.CylinderGeometry(0.0008, 0.0008, 0.045, 32);
             const stickMaterial = new THREE.MeshPhongMaterial({ color: 0xff0000, shininess: 100 });
             stick = new THREE.Mesh(stickGeometry, stickMaterial);
-            // Set stick position statically relative to world, not affected by crossbowGroup movement
             stick.position.set(-0.006, 0.032, 0.13);
-            stick.userData.staticWorldPosition = stick.position.clone();
-            stick.userData.staticWorldQuaternion = stick.quaternion.clone();
             group.add(stick);
 
             // Limbs
@@ -210,7 +207,7 @@
 
             // Position crossbow in front of camera
             group.position.set(0, -0.05, -0.4);
-            group.rotation.set(0, 0, 0);
+            group.rotation.set(0, 0.022, 0);
 
             return group;
         }
@@ -286,7 +283,7 @@
 
             // Set velocity in forward direction
             const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(crossbowGroup.quaternion).normalize();
-            const baseSpeed = 5.9;
+            const baseSpeed = 7.0;
             arrowVelocity.copy(direction).multiplyScalar(baseSpeed);
         }
 
@@ -374,17 +371,7 @@
                 offset.applyQuaternion(camera.quaternion);
                 crossbowGroup.position.copy(camera.position).add(offset);
                 crossbowGroup.quaternion.copy(camera.quaternion);
-
-                // Keep stick's position and orientation fixed in world space
-                if (stick) {
-                    stick.matrixAutoUpdate = false;
-                    stick.matrix.identity();
-                    stick.position.copy(stick.userData.staticWorldPosition);
-                    stick.quaternion.copy(stick.userData.staticWorldQuaternion);
-                    stick.updateMatrix();
-                }
             }
-
             if (target && target.visible) {
                 renderer.xr.getCamera(camera);
                 const dist = target.position.distanceTo(camera.position);
