@@ -380,11 +380,21 @@
                crossbowGroup.rotation.x = 0; // pitch (up/down)
                 crossbowGroup.rotation.y = euler.y;
                 crossbowGroup.rotation.z = 0;
-                if (crossbowGroup.rotation.y > 0.3 || crossbowGroup.rotation.y < -0.3) {
-
+                 if (
+                    crossbowGroup.position.y !== 0 && // avoid division by zero
+                    (
+                        (crossbowGroup.rotation.y / crossbowGroup.position.y) > 0.5 ||
+                        (crossbowGroup.rotation.y / crossbowGroup.position.y) < -0.5
+                    )
+                ) {
+                    const fixedOffset = new THREE.Vector3(0, -0.05, -0.4);
+                    fixedOffset.applyQuaternion(camera.quaternion);
+                    crossbowGroup.position.copy(camera.position).add(fixedOffset);
+                    crossbowGroup.quaternion.copy(camera.quaternion);
+                } else {
                     offset.applyQuaternion(camera.quaternion);
                     crossbowGroup.position.copy(camera.position).add(offset);
-                } 
+                }
 
                 // --- Stick follows crossbow position only ---
                 const stickLocalPos = new THREE.Vector3(-0.002, 0.032, 0.13);
