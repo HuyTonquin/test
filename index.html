@@ -63,6 +63,31 @@
             border-radius: 0.6em;
             font-size: 1.2em;
             z-index: 100;
+            transition: box-shadow 0.2s, background 0.2s;
+        }
+
+        /* Hit flash animation */
+        #healthboard.hit-flash {
+            background: #fff !important;
+            color: #d00 !important;
+            box-shadow: 0 0 16px 8px #ff0000;
+            transition: none;
+        }
+
+        #restart-btn {
+            position: absolute;
+            top: 120px;
+            right: 10px;
+            z-index: 200;
+            font-size: 1.2em;
+            padding: 0.7em 1.5em;
+            border-radius: 0.6em;
+            border: none;
+            background: #1e90ff;
+            color: white;
+            opacity: 0.95;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            display: none;
         }
     </style>
 </head>
@@ -85,6 +110,8 @@
         style="position:absolute;top:45px;right:10px;background:rgba(220,20,60,0.8);color:#fff;padding:0.7em 1.2em;border-radius:0.6em;font-size:1.2em;z-index:100;">
         Health: <span id="health">100</span>
     </div>
+    <!-- Restart Button -->
+    <button id="restart-btn">Restart</button>
     <!-- Shoot Button -->
     <button id="shoot-btn"
         style="position: absolute; bottom: 30px; right: 30px; z-index: 101; font-size: 2em; padding: 0.5em 1.2em; border-radius: 0.5em; border: none; background: #1e90ff; color: white; opacity: 0.85; box-shadow: 0 2px 8px rgba(0,0,0,0.2); display: none;">Shoot</button>
@@ -418,6 +445,18 @@ arrowVelocity.copy(direction).multiplyScalar(baseSpeed);
                 lastTouchY = null;
             });
         }
+        // Flash state for healthboard
+        let healthFlashTimeout = null;
+
+    function flashHealthboard() {
+        const healthboard = document.getElementById('healthboard');
+        healthboard.classList.add('hit-flash');
+        if (healthFlashTimeout) clearTimeout(healthFlashTimeout);
+        healthFlashTimeout = setTimeout(() => {
+            healthboard.classList.remove('hit-flash');
+        }, 250);
+    }
+
         function renderAR(timestamp, frame) {
             if (!xrSession || !renderer.xr.isPresenting) return;
             if (frame && xrHitTestSource && xrRefSpace) {
@@ -549,12 +588,15 @@ arrowVelocity.copy(direction).multiplyScalar(baseSpeed);
                     playerHealth -= targetArrowDamage;
                     if (playerHealth < 0) playerHealth = 0;
                     document.getElementById('health').textContent = playerHealth;
+                    // Flash healthboard on hit
+                    flashHealthboard();
                     // Game over
                     if (playerHealth <= 0) {
                         document.getElementById('healthboard').textContent = "Game Over! You were hit!";
                         // Optionally, stop AR session or disable shooting
                         disableShooting();
                         if (xrSession) xrSession.end();
+                        showRestartButton();
                     }
                 } else if (targetArrow.position.distanceTo(target.position) > 20) {
                     // Remove arrow if too far
@@ -563,8 +605,43 @@ arrowVelocity.copy(direction).multiplyScalar(baseSpeed);
                 }
             }
 
+            // Always show healthboard during AR
+            document.getElementById('healthboard').style.display = 'block';
+
             renderer.render(scene, camera);
         }
+
+        // Add restart logic
+        function showRestartButton() {
+            document.getElementById('restart-btn').style.display = 'block';
+        }
+        function hideRestartButton() {
+            document.getElementById('restart-btn').style.display = 'none';
+        }
+        function resetGame() {
+            // Reset variables
+            playerHealth = 100;
+            score = 0;
+            document.getElementById('health').textContent = playerHealth;
+            document.getElementById('score').textContent = score;
+            document.getElementById('healthboard').innerHTML = 'Health: <span id="health">100</span>';
+            document.getElementById('healthboard').style.display = 'block';
+            document.getElementById('scoreboard').style.display = 'block';
+            hideRestartButton();
+            // Remove any arrows/targets
+            if (arrow) { scene.remove(arrow); arrow = null; }
+            if (targetArrow) { scene.remove(targetArrow); targetArrow = null; }
+            if (target) { target.visible = false; target.hit = false; }
+            if (loadedArrow) loadedArrow.visible = true;
+            crossbowGroup.visible = false;
+            isShooting = false;
+            // Optionally, re-enter AR if session ended
+            if (!xrSession) {
+                document.getElementById('enter-ar').style.display = 'block';
+            }
+        }
+
+        document.getElementById('restart-btn').addEventListener('click', resetGame);
 
         // Setup
         if (navigator.xr) {
