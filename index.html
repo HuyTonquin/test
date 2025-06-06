@@ -391,21 +391,22 @@
             });
         }
         function renderAR(timestamp, frame) {
-            if (frame && xrHitTestSource && xrRefSpace) {
-                const hitTestResults = frame.getHitTestResults(xrHitTestSource);
-                if (hitTestResults.length > 0) {
-                    const hit = hitTestResults[0];
-                    const pose = hit.getPose(xrRefSpace);
-                    if (pose) {
-                        reticle.visible = true;
-                        reticle.matrix.fromArray(pose.transform.matrix);
+                if (!xrSession || !renderer.xr.isPresenting) return;
+                if (frame && xrHitTestSource && xrRefSpace) {
+                    const hitTestResults = frame.getHitTestResults(xrHitTestSource);
+                    if (hitTestResults.length > 0) {
+                        const hit = hitTestResults[0];
+                        const pose = hit.getPose(xrRefSpace);
+                        if (pose) {
+                            reticle.visible = true;
+                            reticle.matrix.fromArray(pose.transform.matrix);
+                        } else {
+                            reticle.visible = false;
+                        }
                     } else {
                         reticle.visible = false;
                     }
-                } else {
-                    reticle.visible = false;
                 }
-            }
 
             // Move crossbow group with camera if visible
             if (crossbowGroup && crossbowGroup.visible) {
