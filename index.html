@@ -275,14 +275,14 @@
             tip.position.set(0, 0.08, 0);
             arrow.add(shaft);
             arrow.add(tip);
-           crossbowGroup.updateMatrixWorld();
-                const tipWorld = new THREE.Vector3(0, 0.03, 0.15).applyMatrix4(crossbowGroup.matrixWorld);
-                arrow.position.copy(tipWorld);
-                arrow.quaternion.copy(crossbowGroup.quaternion);
-            scene.add(arrow);
-            const direction = new THREE.Vector3(0, 0, -1.5).applyQuaternion(crossbowParent.quaternion).normalize();
-            const baseSpeed = 15;
-            arrowVelocity.copy(direction).multiplyScalar(baseSpeed);
+          crossbowGroup.updateMatrixWorld();
+const tipWorld = new THREE.Vector3(0, 0.03, 0.15).applyMatrix4(crossbowGroup.matrixWorld);
+arrow.position.copy(tipWorld);
+const worldQuaternion = new THREE.Quaternion().setFromRotationMatrix(crossbowGroup.matrixWorld);
+arrow.quaternion.copy(worldQuaternion);
+const direction = new THREE.Vector3(0, 0, -1.5).applyQuaternion(worldQuaternion).normalize();
+const baseSpeed = 15;
+arrowVelocity.copy(direction).multiplyScalar(baseSpeed);
         }
 
         // Add shooting event for AR (only via button)
