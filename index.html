@@ -289,7 +289,7 @@
                     const currentY = e.touches[0].clientY;
                     const deltaY = currentY - lastTouchY;
                     crossbowRotationX += deltaY * 0.005;
-                    crossbowRotationX = Math.max(-1.2, Math.min(1.2, crossbowRotationX));
+                    crossbowRotationX = Math.max(-1, Math.min(1, crossbowRotationX));
                     lastTouchY = currentY;
                 }
             });
@@ -371,9 +371,9 @@
             if (crossbowGroup && crossbowGroup.visible) {
                 renderer.xr.getCamera(camera);
                 const euler = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ');
-                crossbowGroup.rotation.set(crossbowRotationX, 0, 0);
+                crossbowGroup.rotation.set(crossbowRotationX, euler.y, 0);
                 //document.getElementById('euler-y-value').textContent = (euler.y + crossbowRotationY).toFixed(3);
-                const fixedOffset = new THREE.Vector3(0, -0.05, -0.4).applyQuaternion(camera.quaternion);
+                const fixedOffset = new THREE.Vector3(0, -0.05, -0.3).applyQuaternion(camera.quaternion);
                 crossbowGroup.position.copy(camera.position).add(fixedOffset);
             }
             if (target && target.visible) {
