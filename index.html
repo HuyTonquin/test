@@ -39,7 +39,17 @@
             text-align: center;
             display: none;
         }
-
+  #healthboard {
+            position: absolute;
+            top: 45px;
+            right: 10px;
+            background: rgba(220, 20, 60, 0.8);
+            color: #fff;
+            padding: 0.7em 1.2em;
+            border-radius: 0.6em;
+            font-size: 1.2em;
+            z-index: 100;
+        }
         /* Scoreboard styles */
         #scoreboard {
             position: absolute;
@@ -64,9 +74,9 @@
         style="position:absolute;top:10px;left:10px;background:rgba(30,144,255,0.8);color:#fff;padding:0.7em 1.2em;border-radius:0.6em;font-size:1.2em;z-index:100;">
         Score: <span id="score">0</span>
     </div>
-    <div id="euler-y-display"
-        style="position:absolute;top:55px;left:10px;background:rgba(30,144,255,0.7);color:#fff;padding:0.4em 1em;border-radius:0.5em;font-size:1em;z-index:100;display:none;">
-        Yaw (euler.y): <span id="euler-y-value">0</span>
+    <div id="healthboard"
+        style="position:absolute;top:45px;right:10px;background:rgba(220,20,60,0.8);color:#fff;padding:0.7em 1.2em;border-radius:0.6em;font-size:1.2em;z-index:100;">
+        Health: <span id="health">100</span>
     </div>
     <!-- Shoot Button -->
     <button id="shoot-btn"
@@ -257,6 +267,14 @@
         let lastShotTime = -Infinity;
         const reloadTime = 1.2; // seconds
 
+          let playerHealth = 100;
+        let targetArrow = null;
+        let targetArrowVelocity = new THREE.Vector3();
+        let targetLastShotTime = -Infinity;
+        const targetReloadTime = 4; // seconds
+        const targetArrowDamage = 10; // -10 health per hit
+
+        
         // Add shoot event listener in AR
         function shootArrow() {
             if (!crossbowGroup || !crossbowGroup.visible) return;
