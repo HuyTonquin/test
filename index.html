@@ -375,8 +375,8 @@
                     crossbowGroup.rotation.set(crossbowRotationX, euler.y, 0);
                 } else {
                     // Example: clamp euler.y to [-π/2, π/2] before applying
-                    const clampedY = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, euler.y));
-                    crossbowGroup.rotation.set(crossbowRotationX, clampedY, 0);
+                    
+                    crossbowGroup.rotation.set(crossbowRotationX, euler.y, euler.z - crossbowRotationX);
                 }
                 const fixedOffset = new THREE.Vector3(0, -0.05, -0.3).applyQuaternion(camera.quaternion);
                 crossbowGroup.position.copy(camera.position).add(fixedOffset);
