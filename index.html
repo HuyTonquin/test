@@ -350,10 +350,11 @@ arrowVelocity.copy(direction).multiplyScalar(baseSpeed);
                 });
 
                 renderer.domElement.addEventListener('click', () => {
-                    if (reticle.visible) {
+                    if (reticle && reticle.visible) {
                         // Place target at reticle
                         //const matrix = reticle.matrix;
-                        const origin = crossbowGroup.position.clone();
+                       renderer.xr.getCamera(camera);
+                const origin = camera.position.clone();
                         // Random distance between 1.5m and 5m
                         const distance = 1.5 + Math.random() * 3.5;
                         // Random horizontal angle within +/- 60 degrees in front of user
