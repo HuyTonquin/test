@@ -130,7 +130,7 @@
             const woodTexture = textureLoader.load('https://threejs.org/examples/textures/hardwood2_diffuse.jpg');
             const bodyMaterial = new THREE.MeshPhongMaterial({ map: woodTexture, shininess: 50 });
             const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-            body.position.set(0, 0, 0.02);
+            body.position.set(0, -0.2, 0.02);
             group.add(body);
 
             // Stick
