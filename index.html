@@ -89,13 +89,24 @@
         let xrViewerSpace = null;
         let xrHitTestSource = null;
         let renderer, scene, camera, cube, reticle;
-
         // Crossbow group variables
         let crossbowParent, crossbowGroup, stick, loadedArrow;
-
         let target = null; // Replace cube with target
         let score = 0;
+        // Shooting logic variables
+        let arrow = null;
+        let arrowVelocity = new THREE.Vector3();
+        let isShooting = false;
+        let lastShotTime = -Infinity;
+        const reloadTime = 1.2; // seconds
 
+          let playerHealth = 100;
+        let targetArrow = null;
+        let targetArrowVelocity = new THREE.Vector3();
+        let targetLastShotTime = -Infinity;
+        const targetReloadTime = 4; // seconds
+        const targetArrowDamage = 10; // -10 health per hit
+        
         function createBullseyeTexture() {
             const size = 256;
             const canvas = document.createElement('canvas');
@@ -235,7 +246,7 @@
                 return;
             }
             scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
             renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.xr.enabled = true;
@@ -259,21 +270,6 @@
             stick.visible = false;
             setupSwipeControls();
         }
-
-        // Shooting logic variables
-        let arrow = null;
-        let arrowVelocity = new THREE.Vector3();
-        let isShooting = false;
-        let lastShotTime = -Infinity;
-        const reloadTime = 1.2; // seconds
-
-          let playerHealth = 100;
-        let targetArrow = null;
-        let targetArrowVelocity = new THREE.Vector3();
-        let targetLastShotTime = -Infinity;
-        const targetReloadTime = 4; // seconds
-        const targetArrowDamage = 10; // -10 health per hit
-
         
         // Add shoot event listener in AR
         function shootArrow() {
