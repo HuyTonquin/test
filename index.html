@@ -280,7 +280,7 @@
                 arrow.position.copy(tipWorld);
                 arrow.quaternion.copy(crossbowGroup.quaternion);
             scene.add(arrow);
-            const direction = new THREE.Vector3(0, 0, -1.5).applyQuaternion(crossbowGroup.quaternion).normalize();
+            const direction = new THREE.Vector3(0, 0, -1.5).applyQuaternion(crossbowParent.quaternion).normalize();
             const baseSpeed = 15;
             arrowVelocity.copy(direction).multiplyScalar(baseSpeed);
         }
