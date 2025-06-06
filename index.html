@@ -129,6 +129,20 @@
 
         let target = null; // Replace cube with target
         let score = 0;
+         // Shooting logic variables
+        let arrow = null;
+        let arrowVelocity = new THREE.Vector3();
+        let isShooting = false;
+        let lastShotTime = -Infinity;
+        const reloadTime = 1.2; // seconds
+
+        // Target shooting logic variables
+        let playerHealth = 100;
+        let targetArrow = null;
+        let targetArrowVelocity = new THREE.Vector3();
+        let targetLastShotTime = -Infinity;
+        const targetReloadTime = 4; // seconds
+        const targetArrowDamage = 2 // -10 health per hit
 
         function createBullseyeTexture() {
             const size = 256;
@@ -293,21 +307,6 @@
             stick.visible = false;
             setupSwipeControls();
         }
-
-        // Shooting logic variables
-        let arrow = null;
-        let arrowVelocity = new THREE.Vector3();
-        let isShooting = false;
-        let lastShotTime = -Infinity;
-        const reloadTime = 1.2; // seconds
-
-        // Target shooting logic variables
-        let playerHealth = 100;
-        let targetArrow = null;
-        let targetArrowVelocity = new THREE.Vector3();
-        let targetLastShotTime = -Infinity;
-        const targetReloadTime = 4; // seconds
-        const targetArrowDamage = 2; // -10 health per hit
 
         // Add shoot event listener in AR
         function shootArrow() {
@@ -635,10 +634,9 @@ arrowVelocity.copy(direction).multiplyScalar(baseSpeed);
             if (loadedArrow) loadedArrow.visible = true;
             crossbowGroup.visible = false;
             isShooting = false;
-            // Optionally, re-enter AR if session ended
-            if (!xrSession) {
-                document.getElementById('enter-ar').style.display = 'block';
-            }
+            // Always re-enter AR mode
+            if (!renderer) initScene();
+            onEnterAR();
         }
 
         document.getElementById('restart-btn').addEventListener('click', resetGame);
