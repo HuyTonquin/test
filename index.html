@@ -322,6 +322,7 @@
                 xrHitTestSource = await xrSession.requestHitTestSource({ space: xrViewerSpace });
 
                 document.getElementById('enter-ar').style.display = 'none';
+ document.getElementById('euler-y-display').style.display = 'block';
 
                 renderer.setAnimationLoop(renderAR);
 
