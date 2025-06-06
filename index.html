@@ -471,7 +471,68 @@ arrowVelocity.copy(direction).multiplyScalar(baseSpeed);
                     }, reloadTime * 1000);
                 }
             }
+if (target && target.visible) {
+                const now = performance.now() / 1000;
+                if (!targetArrow && now - targetLastShotTime > targetReloadTime) {
+                    // Shoot arrow at player
+                    targetArrow = new THREE.Group();
+                    const shaft = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.005, 0.005, 0.08, 12),
+                        new THREE.MeshPhongMaterial({ color: 0x2222ff, shininess: 50 })
+                    );
+                    const tip = new THREE.Mesh(
+                        new THREE.ConeGeometry(0.01, 0.08, 12),
+                        new THREE.MeshPhongMaterial({ color: 0xff2222, shininess: 100 })
+                    );
+                    tip.position.set(0, 0.08, 0);
+                    targetArrow.add(shaft);
+                    targetArrow.add(tip);
+                    // Place at target position
+                    targetArrow.position.copy(target.position);
+                    // Aim at player (camera)
+                    renderer.xr.getCamera(camera);
+                    const direction = camera.position.clone().sub(target.position).normalize();
+                    targetArrow.lookAt(camera.position);
+                    // Set velocity toward player
+                    targetArrowVelocity.copy(direction).multiplyScalar(10);
+                    scene.add(targetArrow);
+                    targetLastShotTime = now;
+                }
+            }
 
+            // Move target arrow
+            if (targetArrow) {
+                targetArrow.position.x += targetArrowVelocity.x * 0.016;
+                targetArrow.position.y += targetArrowVelocity.y * 0.016;
+                targetArrow.position.z += targetArrowVelocity.z * 0.016;
+                // Orient arrow in velocity direction
+                const velocityDirection = targetArrowVelocity.clone().normalize();
+                if (velocityDirection.lengthSq() > 0) {
+                    targetArrow.lookAt(targetArrow.position.clone().add(velocityDirection));
+                    targetArrow.rotateX(Math.PI / 2);
+                }
+                // Hit detection with player (camera)
+                renderer.xr.getCamera(camera);
+                if (targetArrow.position.distanceTo(camera.position) < 0.12) {
+                    // Player hit
+                    scene.remove(targetArrow);
+                    targetArrow = null;
+                    playerHealth -= targetArrowDamage;
+                    if (playerHealth < 0) playerHealth = 0;
+                    document.getElementById('health').textContent = playerHealth;
+                    // Game over
+                    if (playerHealth <= 0) {
+                        document.getElementById('healthboard').textContent = "Game Over! You were hit!";
+                        // Optionally, stop AR session or disable shooting
+                        disableShooting();
+                        if (xrSession) xrSession.end();
+                    }
+                } else if (targetArrow.position.distanceTo(target.position) > 20) {
+                    // Remove arrow if too far
+                    scene.remove(targetArrow);
+                    targetArrow = null;
+                }
+            }
             renderer.render(scene, camera);
         }
 
