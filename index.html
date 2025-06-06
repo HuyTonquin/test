@@ -409,7 +409,7 @@
                 }
 
             // Move crossbow group with camera if visible
-            if (crossbowGroup && crossbowGroup.visible) {
+            if (crossbowParent && crossbowGroup && crossbowGroup.visible) {
                 renderer.xr.getCamera(camera);
                 const euler = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ');
                 crossbowParent.position.copy(camera.position).add(fixedOffset);
