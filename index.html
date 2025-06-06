@@ -283,6 +283,7 @@ arrow.quaternion.copy(worldQuaternion);
 const direction = new THREE.Vector3(0, 0, -1.5).applyQuaternion(worldQuaternion).normalize();
 const baseSpeed = 15;
 arrowVelocity.copy(direction).multiplyScalar(baseSpeed);
+             scene.add(arrow);
         }
 
         // Add shooting event for AR (only via button)
