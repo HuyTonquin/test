@@ -289,7 +289,7 @@
                     const currentY = e.touches[0].clientY;
                     const deltaY = currentY - lastTouchY;
                     crossbowRotationX += deltaY * 0.005;
-                    crossbowRotationX = Math.max(-1, Math.min(1, crossbowRotationX));
+                    crossbowRotationX = Math.max(-2, Math.min(2, crossbowRotationX));
                     lastTouchY = currentY;
                 }
             });
