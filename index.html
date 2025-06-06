@@ -532,6 +532,7 @@ if (target && target.visible) {
                     // Player hit
                     scene.remove(targetArrow);
                     targetArrow = null;
+                     targetArrowVelocity.set(0, 0, 0);
                     playerHealth -= targetArrowDamage;
                     if (playerHealth < 0) playerHealth = 0;
                     document.getElementById('health').textContent = playerHealth;
@@ -542,10 +543,11 @@ if (target && target.visible) {
                         disableShooting();
                         if (xrSession) xrSession.end();
                     }
-                } else if (targetArrow.position.distanceTo(target.position) > 20) {
+                } else if (targetArrow.position.distanceTo(target.position) > 10) {
                     // Remove arrow if too far
                     scene.remove(targetArrow);
                     targetArrow = null;
+                    targetArrowVelocity.set(0, 0, 0);
                 }
             }
             renderer.render(scene, camera);
