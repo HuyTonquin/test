@@ -371,7 +371,7 @@
             if (crossbowGroup && crossbowGroup.visible) {
                 renderer.xr.getCamera(camera);
                 const euler = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ');
-                crossbowGroup.rotation.set(0, euler.y/crossbowRotationY, 0);
+                crossbowGroup.rotation.set(0, euler.y + crossbowRotationY, -0.3);
                 document.getElementById('euler-y-value').textContent = (euler.y + crossbowRotationY).toFixed(3);
                 const fixedOffset = new THREE.Vector3(0, -0.05, -0.4).applyQuaternion(camera.quaternion);
                 crossbowGroup.position.copy(camera.position).add(fixedOffset);
