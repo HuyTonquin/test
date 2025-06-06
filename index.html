@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <title>Hello WebXR AR</title>
@@ -39,18 +38,7 @@
             text-align: center;
             display: none;
         }
-  #healthboard {
-            position: absolute;
-            top: 45px;
-            right: 10px;
-            background: rgba(220, 20, 60, 0.8);
-            color: #fff;
-            padding: 0.7em 1.2em;
-            border-radius: 0.6em;
-            font-size: 1.2em;
-            z-index: 100;
-        }
-        /* Scoreboard styles */
+
         #scoreboard {
             position: absolute;
             top: 10px;
@@ -62,51 +50,80 @@
             font-size: 1.2em;
             z-index: 9999;
         }
+
+        #healthboard {
+            position: absolute;
+            top: 45px;
+            right: 10px;
+            background: rgba(220, 20, 60, 0.8);
+            color: #fff;
+            padding: 0.7em 1.2em;
+            border-radius: 0.6em;
+            font-size: 1.2em;
+            z-index: 100;
+        }
+
+        #euler-y-display {
+            position: absolute;
+            top: 55px;
+            left: 10px;
+            background: rgba(30, 144, 255, 0.7);
+            color: #fff;
+            padding: 0.4em 1em;
+            border-radius: 0.5em;
+            font-size: 1em;
+            z-index: 100;
+            display: none;
+        }
+
+        #shoot-btn {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            z-index: 101;
+            font-size: 2em;
+            padding: 0.5em 1.2em;
+            border-radius: 0.5em;
+            border: none;
+            background: #1e90ff;
+            color: white;
+            opacity: 0.85;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            display: none;
+        }
     </style>
 </head>
-
 <body>
     <button id="enter-ar">Enter AR</button>
-
     <div id="unsupported">AR not supported on this device/browser.</div>
-    <!-- Scoreboard -->
-    <div id="scoreboard"
-        style="position:absolute;top:10px;left:10px;background:rgba(30,144,255,0.8);color:#fff;padding:0.7em 1.2em;border-radius:0.6em;font-size:1.2em;z-index:100;">
-        Score: <span id="score">0</span>
-    </div>
-    <div id="healthboard"
-        style="position:absolute;top:45px;right:10px;background:rgba(220,20,60,0.8);color:#fff;padding:0.7em 1.2em;border-radius:0.6em;font-size:1.2em;z-index:100;">
-        Health: <span id="health">100</span>
-    </div>
-    <!-- Shoot Button -->
-    <button id="shoot-btn"
-        style="position: absolute; bottom: 30px; right: 30px; z-index: 101; font-size: 2em; padding: 0.5em 1.2em; border-radius: 0.5em; border: none; background: #1e90ff; color: white; opacity: 0.85; box-shadow: 0 2px 8px rgba(0,0,0,0.2); display: none;">Shoot</button>
-    <script src="https://unpkg.com/three@0.134.0/build/three.js"></script>
+    <div id="scoreboard">Score: <span id="score">0</span></div>
+    <div id="euler-y-display">Yaw (euler.y): <span id="euler-y-value">0</span></div>
+    <div id="healthboard">Health: <span id="health">100</span></div>
+    <button id="shoot-btn">Shoot</button>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r169/three.min.js"></script>
     <script>
         let xrSession = null;
         let xrRefSpace = null;
         let xrViewerSpace = null;
         let xrHitTestSource = null;
-        let renderer, scene, camera, cube, reticle;
-        // Crossbow group variables
+        let renderer, scene, camera, target, reticle;
         let crossbowParent, crossbowGroup, stick, loadedArrow;
-        let target = null; // Replace cube with target
-        let score = 0;
-        // Shooting logic variables
         let arrow = null;
         let arrowVelocity = new THREE.Vector3();
         let isShooting = false;
         let lastShotTime = -Infinity;
         const reloadTime = 1.2; // seconds
-
-          let playerHealth = 100;
+        let playerHealth = 100;
         let targetArrow = null;
         let targetArrowVelocity = new THREE.Vector3();
         let targetLastShotTime = -Infinity;
         const targetReloadTime = 4; // seconds
         const targetArrowDamage = 10; // -10 health per hit
-        
+        let score = 0;
+        let crossbowRotationX = 0;
+        let touchStartY = null;
+        let lastTouchY = null;
+
         function createBullseyeTexture() {
             const size = 256;
             const canvas = document.createElement('canvas');
@@ -139,7 +156,7 @@
             const mesh = new THREE.Mesh(geometry, material);
             mesh.rotation.x = Math.PI / 2;
             mesh.visible = false;
-            mesh.hit = false; // Add hit property
+            mesh.hit = false;
             return mesh;
         }
 
@@ -159,8 +176,7 @@
             const stickMaterial = new THREE.MeshPhongMaterial({ color: 0xff0000, shininess: 100 });
             stick = new THREE.Mesh(stickGeometry, stickMaterial);
             stick.position.set(-0.006, 0.032, 0.13);
-            // Do NOT add stick to group here
-            // group.add(stick);
+            group.add(stick);
 
             // Limbs
             const leftLimbCurve = new THREE.CatmullRomCurve3([
@@ -181,10 +197,8 @@
                     new THREE.MeshPhongMaterial({ color: 0xB8860B, shininess: 80 })
                 );
             }
-            const leftLimb = createTaperedLimb(leftLimbCurve);
-            const rightLimb = createTaperedLimb(rightLimbCurve);
-            group.add(leftLimb);
-            group.add(rightLimb);
+            group.add(createTaperedLimb(leftLimbCurve));
+            group.add(createTaperedLimb(rightLimbCurve));
 
             // String
             const stringCurveSag = new THREE.CatmullRomCurve3([
@@ -192,10 +206,9 @@
                 new THREE.Vector3(0, 0.03, 0.12),
                 new THREE.Vector3(0.25, 0.005, -0.11)
             ]);
-            let bowStringGeometry = new THREE.TubeGeometry(stringCurveSag, 2, 0.001, 8, false);
+            const bowStringGeometry = new THREE.TubeGeometry(stringCurveSag, 2, 0.001, 8, false);
             const stringMaterial = new THREE.MeshPhongMaterial({ color: 0x888888, shininess: 50 });
-            const bowString = new THREE.Mesh(bowStringGeometry, stringMaterial);
-            group.add(bowString);
+            group.add(new THREE.Mesh(bowStringGeometry, stringMaterial));
 
             // Trigger guard
             const triggerGeometry = new THREE.TorusGeometry(0.02, 0.005, 5, 100, Math.PI);
@@ -231,10 +244,7 @@
             loadedArrow.visible = true;
             group.add(loadedArrow);
 
-            // Position crossbow in front of camera
             group.position.set(0, 0.1, -0.3);
-            group.rotation.set(0, 0, 0);
-
             return group;
         }
 
@@ -246,32 +256,40 @@
                 return;
             }
             scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.05, 100); // Adjusted near/far planes
             renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setPixelRatio(window.devicePixelRatio);
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.xr.enabled = true;
             document.body.appendChild(renderer.domElement);
+
+            // Add directional light for better visibility
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+            directionalLight.position.set(0, 1, 1);
+            scene.add(directionalLight);
+            scene.add(new THREE.HemisphereLight(0xffffff, 0xbbbbff, 0.6));
+
             target = createTarget();
             scene.add(target);
-            const ringGeo = new THREE.RingGeometry(0.07, 0.09, 32).rotateX(-Math.PI / 2);
-            const ringMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-            reticle = new THREE.Mesh(ringGeo, ringMat);
+
+            // Improved reticle: use a plane for better visibility
+            const reticleGeo = new THREE.PlaneGeometry(0.1, 0.1);
+            const reticleMat = new THREE.MeshBasicMaterial({ color: 0xffff00, side: THREE.DoubleSide, transparent: true, opacity: 0.7 });
+            reticle = new THREE.Mesh(reticleGeo, reticleMat);
             reticle.matrixAutoUpdate = false;
             reticle.visible = false;
             scene.add(reticle);
-            scene.add(new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1));
+
             const textureLoader = new THREE.TextureLoader();
             crossbowParent = new THREE.Group();
             crossbowGroup = createCrossbowGroup(textureLoader);
             crossbowGroup.visible = false;
             crossbowParent.add(crossbowGroup);
             scene.add(crossbowParent);
-             scene.add(stick);
-            stick.visible = false;
+
             setupSwipeControls();
         }
-        
-        // Add shoot event listener in AR
+
         function shootArrow() {
             if (!crossbowGroup || !crossbowGroup.visible) return;
             const now = performance.now() / 1000;
@@ -279,6 +297,7 @@
             isShooting = true;
             lastShotTime = now;
             if (loadedArrow) loadedArrow.visible = false;
+
             arrow = new THREE.Group();
             const shaft = new THREE.Mesh(
                 new THREE.CylinderGeometry(0.005, 0.005, 0.08, 12),
@@ -291,99 +310,115 @@
             tip.position.set(0, 0.08, 0);
             arrow.add(shaft);
             arrow.add(tip);
-          crossbowGroup.updateMatrixWorld();
-const tipWorld = new THREE.Vector3(0, 0.03, 0.15).applyMatrix4(crossbowGroup.matrixWorld);
-arrow.position.copy(tipWorld);
-const worldQuaternion = new THREE.Quaternion().setFromRotationMatrix(crossbowGroup.matrixWorld);
-arrow.quaternion.copy(worldQuaternion);
-const direction = new THREE.Vector3(0, 0, -1.5).applyQuaternion(worldQuaternion).normalize();
-const baseSpeed = 15;
-arrowVelocity.copy(direction).multiplyScalar(baseSpeed);
-             scene.add(arrow);
+
+            crossbowGroup.updateMatrixWorld();
+            const tipWorld = new THREE.Vector3(0, 0.03, 0.15).applyMatrix4(crossbowGroup.matrixWorld);
+            arrow.position.copy(tipWorld);
+            const worldQuaternion = new THREE.Quaternion().setFromRotationMatrix(crossbowGroup.matrixWorld);
+            arrow.quaternion.copy(worldQuaternion);
+            const direction = new THREE.Vector3(0, 0, -1.5).applyQuaternion(worldQuaternion).normalize();
+            const baseSpeed = 15;
+            arrowVelocity.copy(direction).multiplyScalar(baseSpeed);
+            scene.add(arrow);
         }
 
-        // Add shooting event for AR (only via button)
         function enableShooting() {
-            document.getElementById('shoot-btn').style.display = 'block';
-            document.getElementById('shoot-btn').addEventListener('click', shootArrow);
+            const shootBtn = document.getElementById('shoot-btn');
+            shootBtn.style.display = 'block';
+            shootBtn.addEventListener('click', shootArrow);
         }
+
         function disableShooting() {
-            document.getElementById('shoot-btn').style.display = 'none';
-            document.getElementById('shoot-btn').removeEventListener('click', shootArrow);
+            const shootBtn = document.getElementById('shoot-btn');
+            shootBtn.style.display = 'none';
+            shootBtn.removeEventListener('click', shootArrow);
         }
 
         async function onEnterAR() {
             if (!navigator.xr) {
+                document.getElementById('unsupported').textContent = 'WebXR not supported on this device/browser.';
                 document.getElementById('unsupported').style.display = 'block';
+                document.getElementById('enter-ar').style.display = 'none';
                 return;
             }
             try {
                 xrSession = await navigator.xr.requestSession('immersive-ar', {
-                    requiredFeatures: ['hit-test', 'local-floor']
+                    requiredFeatures: ['local-floor'],
+                    optionalFeatures: ['hit-test']
                 });
                 renderer.xr.setSession(xrSession);
-
                 xrRefSpace = await xrSession.requestReferenceSpace('local-floor');
                 xrViewerSpace = await xrSession.requestReferenceSpace('viewer');
-                xrHitTestSource = await xrSession.requestHitTestSource({ space: xrViewerSpace });
+
+                // Initialize hit-test source
+                try {
+                    xrHitTestSource = await xrSession.requestHitTestSource({ space: xrViewerSpace });
+                    console.log('Hit-test source initialized successfully');
+                } catch (e) {
+                    console.warn('Hit-test not supported or failed:', e);
+                    document.getElementById('unsupported').textContent = 'Hit-test not supported. Targets will be placed at a default position.';
+                    document.getElementById('unsupported').style.display = 'block';
+                    setTimeout(() => {
+                        document.getElementById('unsupported').style.display = 'none';
+                    }, 3000);
+                }
 
                 document.getElementById('enter-ar').style.display = 'none';
                 document.getElementById('euler-y-display').style.display = 'block';
+                document.getElementById('scoreboard').style.display = 'block';
+                document.getElementById('healthboard').style.display = 'block';
 
                 renderer.setAnimationLoop(renderAR);
 
                 xrSession.addEventListener('end', () => {
                     document.getElementById('enter-ar').style.display = 'block';
+                    document.getElementById('euler-y-display').style.display = 'none';
+                    document.getElementById('scoreboard').style.display = 'none';
+                    document.getElementById('healthboard').style.display = 'none';
                     if (renderer.domElement.parentNode) {
                         renderer.domElement.parentNode.removeChild(renderer.domElement);
                     }
-                    xrHitTestSource = null;
+                    if (xrHitTestSource) {
+                        xrHitTestSource.cancel();
+                        xrHitTestSource = null;
+                    }
                     xrViewerSpace = null;
                     xrRefSpace = null;
                     xrSession = null;
                     disableShooting();
-                    document.getElementById('euler-y-display').style.display = 'block';
                 });
 
                 renderer.domElement.addEventListener('click', () => {
+                    renderer.xr.getCamera(camera);
+                    const cameraPos = camera.position.clone();
+                    let targetPos;
                     if (reticle && reticle.visible) {
-                        // Place target at reticle
-                        //const matrix = reticle.matrix;
-                       renderer.xr.getCamera(camera);
-                const origin = camera.position.clone();
-                        // Random distance between 1.5m and 5m
-                        const distance = 1.5 + Math.random() * 3.5;
-                        // Random horizontal angle within +/- 60 degrees in front of user
-                        const angle = (Math.random() - 0.5) * Math.PI / 1.5;
-                        // Calculate offset in XZ plane
-                        const offset = new THREE.Vector3(
-                            Math.sin(angle) * distance,
-                            0,
-                            -Math.cos(angle) * distance
-                        );
-                        // Get the Y (vertical) position from the reticle (surface)
-                        const surfaceY = new THREE.Vector3().setFromMatrixPosition(reticle.matrix).y;
-                        // Set target position
-                        target.position.copy(origin).add(offset);
-                        target.position.y = surfaceY;
-                        target.visible = true;
-                        target.hit = false; // Reset hit state
-                        // Place crossbow at the same position as the target                
-                        //crossbowGroup.position.y += 0.05; // Slightly above the surface
-                        crossbowGroup.visible = true;
-                        enableShooting();
+                        // Place target at reticle position
+                        targetPos = new THREE.Vector3().setFromMatrixPosition(reticle.matrix);
+                        console.log('Placing target at reticle position:', targetPos);
+                    } else {
+                        // Fallback: place target 2m in front of camera at eye level
+                        console.warn('Reticle not visible, using fallback position');
+                        const forward = new THREE.Vector3(0, 0, -2).applyQuaternion(camera.quaternion);
+                        targetPos = cameraPos.clone().add(forward);
+                        targetPos.y = cameraPos.y - 0.5; // Place slightly below eye level
                     }
+                    target.position.copy(targetPos);
+                    target.visible = true;
+                    target.hit = false;
+                    crossbowGroup.visible = true;
+                    stick.visible = true;
+                    enableShooting();
+                    console.log('Target placed at:', targetPos);
                 });
             } catch (e) {
+                console.error('Failed to start AR session:', e);
+                document.getElementById('unsupported').textContent = 'Failed to start AR: ' + e.message;
                 document.getElementById('unsupported').style.display = 'block';
                 document.getElementById('enter-ar').style.display = 'none';
             }
         }
-        let crossbowRotationX = 0; // Track manual rotation
-        let touchStartY = null;
-        let lastTouchY = null;
 
-        // Touch swipe logic for adjusting crossbow rotation.y
         function setupSwipeControls() {
             renderer.domElement.addEventListener('touchstart', (e) => {
                 if (e.touches.length === 1) {
@@ -395,37 +430,54 @@ arrowVelocity.copy(direction).multiplyScalar(baseSpeed);
                 if (e.touches.length === 1 && touchStartY !== null) {
                     const currentY = e.touches[0].clientY;
                     const deltaY = currentY - lastTouchY;
-                    // Sensitivity: adjust as needed (positive deltaY = swipe down)
                     crossbowRotationX += deltaY * 0.005;
-                    // Clamp rotation if desired, e.g. between -1.2 and 1.2 radians
                     crossbowRotationX = Math.max(-1, Math.min(1, crossbowRotationX));
                     lastTouchY = currentY;
                 }
             });
-            renderer.domElement.addEventListener('touchend', (e) => {
+            renderer.domElement.addEventListener('touchend', () => {
                 touchStartY = null;
                 lastTouchY = null;
             });
         }
+
         function renderAR(timestamp, frame) {
-                if (!xrSession || !renderer.xr.isPresenting) return;
-                if (frame && xrHitTestSource && xrRefSpace) {
-                    const hitTestResults = frame.getHitTestResults(xrHitTestSource);
-                    if (hitTestResults.length > 0) {
-                        const hit = hitTestResults[0];
-                        const pose = hit.getPose(xrRefSpace);
-                        if (pose) {
-                            reticle.visible = true;
-                            reticle.matrix.fromArray(pose.transform.matrix);
-                        } else {
-                            reticle.visible = false;
-                        }
+            if (!xrSession || !renderer.xr.isPresenting) return;
+
+            if (frame && xrHitTestSource && xrRefSpace) {
+                const hitTestResults = frame.getHitTestResults(xrHitTestSource);
+                if (hitTestResults.length > 0) {
+                    const hit = hitTestResults[0];
+                    const pose = hit.getPose(xrRefSpace);
+                    if (pose) {
+                        reticle.visible = true;
+                        reticle.matrix.fromArray(pose.transform.matrix);
+                        // Slight offset to avoid surface clipping
+                        const pos = new THREE.Vector3().setFromMatrixPosition(reticle.matrix);
+                        pos.y += 0.01; // Lift reticle 1cm above surface
+                        reticle.position.copy(pos);
+                        reticle.quaternion.setFromRotationMatrix(new THREE.Matrix4().fromArray(pose.transform.matrix));
+                        console.log('Reticle positioned at:', pos);
                     } else {
                         reticle.visible = false;
+                        console.warn('No valid pose from hit-test');
                     }
+                } else {
+                    reticle.visible = false;
+                    console.warn('No hit-test results');
                 }
+            } else {
+                // Fallback: place reticle 1m in front of camera
+                renderer.xr.getCamera(camera);
+                const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+                const reticlePos = camera.position.clone().add(forward);
+                reticlePos.y = camera.position.y - 0.5; // At eye level
+                reticle.position.copy(reticlePos);
+                reticle.quaternion.copy(camera.quaternion);
+                reticle.visible = true;
+                console.log('Reticle fallback position:', reticlePos);
+            }
 
-            // Move crossbow group with camera if visible
             if (crossbowParent && crossbowGroup && crossbowGroup.visible) {
                 renderer.xr.getCamera(camera);
                 const euler = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ');
@@ -433,51 +485,38 @@ arrowVelocity.copy(direction).multiplyScalar(baseSpeed);
                 crossbowParent.position.copy(camera.position).add(fixedOffset);
                 crossbowParent.rotation.set(0, euler.y, 0);
                 crossbowGroup.rotation.set(crossbowRotationX, 0, 0);
-                //document.getElementById('euler-y-value').textContent = (euler.y + crossbowRotationY).toFixed(3);
-                
-               
+                document.getElementById('euler-y-value').textContent = euler.y.toFixed(3);
             }
-            // --- Stick follows crossbow position only ---
 
             if (target && target.visible) {
                 renderer.xr.getCamera(camera);
                 const dist = target.position.distanceTo(camera.position);
-                // 0.15 at 2m, 0.3 at 4m, 0.45 at 6m, etc. (linear scaling)
-                const baseScale = 0.8;
-                const scale = baseScale / dist * 3;
+                const baseScale = 0.5; // Reduced for better visibility
+                const scale = Math.max(0.2, Math.min(2, baseScale / dist * 3)); // Clamp scale
                 target.scale.setScalar(scale);
+                console.log('Target scale:', scale, 'position:', target.position);
             }
-            // Arrow movement logic
-            if (arrow && isShooting) {
-                arrow.position.x += arrowVelocity.x * 0.016;
-                arrow.position.y += arrowVelocity.y * 0.016;
-                arrow.position.z += arrowVelocity.z * 0.016;
-                arrowVelocity.y -= 0.981 * 0.016;
 
-                // Orient arrow in velocity direction
+            if (arrow && isShooting) {
+                arrow.position.addScaledVector(arrowVelocity, 0.016);
+                arrowVelocity.y -= 0.981 * 0.016;
                 const velocityDirection = arrowVelocity.clone().normalize();
                 if (velocityDirection.lengthSq() > 0) {
                     arrow.lookAt(arrow.position.clone().add(velocityDirection));
                     arrow.rotateX(Math.PI / 2);
                 }
-
-                // Hit detection with target
                 if (target && target.visible && !target.hit && arrow.position.distanceTo(target.position) < 0.1) {
                     scene.remove(arrow);
                     arrow = null;
                     isShooting = false;
                     target.visible = false;
-                    target.hit = true; // Mark as hit
+                    target.hit = true;
                     score += 10;
                     document.getElementById('score').textContent = score;
-                    // Ensure scoreboard is visible
-                    document.getElementById('scoreboard').style.display = 'block';
                     setTimeout(() => {
                         if (loadedArrow) loadedArrow.visible = true;
                     }, reloadTime * 1000);
-                }
-                // Remove arrow if too far or below ground
-                else if (arrow && (arrow.position.distanceTo(camera.position) > 10 || arrow.position.y < -2)) {
+                } else if (arrow && (arrow.position.distanceTo(camera.position) > 10 || arrow.position.y < -2)) {
                     scene.remove(arrow);
                     arrow = null;
                     isShooting = false;
@@ -486,10 +525,10 @@ arrowVelocity.copy(direction).multiplyScalar(baseSpeed);
                     }, reloadTime * 1000);
                 }
             }
-if (target && target.visible) {
+
+            if (target && target.visible) {
                 const now = performance.now() / 1000;
                 if (!targetArrow && now - targetLastShotTime > targetReloadTime) {
-                    // Shoot arrow at player
                     targetArrow = new THREE.Group();
                     const shaft = new THREE.Mesh(
                         new THREE.CylinderGeometry(0.005, 0.005, 0.08, 12),
@@ -502,58 +541,44 @@ if (target && target.visible) {
                     tip.position.set(0, 0.08, 0);
                     targetArrow.add(shaft);
                     targetArrow.add(tip);
-                    // Place at target position
                     targetArrow.position.copy(target.position);
-                    // Aim at player (camera)
                     renderer.xr.getCamera(camera);
                     const direction = camera.position.clone().sub(target.position).normalize();
                     targetArrow.lookAt(camera.position);
-                    // Set velocity toward player
                     targetArrowVelocity.copy(direction).multiplyScalar(10);
                     scene.add(targetArrow);
                     targetLastShotTime = now;
                 }
             }
 
-            // Move target arrow
             if (targetArrow) {
-                targetArrow.position.x += targetArrowVelocity.x * 0.016;
-                targetArrow.position.y += targetArrowVelocity.y * 0.016;
-                targetArrow.position.z += targetArrowVelocity.z * 0.016;
-                // Orient arrow in velocity direction
+                targetArrow.position.addScaledVector(targetArrowVelocity, 0.016);
                 const velocityDirection = targetArrowVelocity.clone().normalize();
                 if (velocityDirection.lengthSq() > 0) {
                     targetArrow.lookAt(targetArrow.position.clone().add(velocityDirection));
                     targetArrow.rotateX(Math.PI / 2);
                 }
-                // Hit detection with player (camera)
                 renderer.xr.getCamera(camera);
                 if (targetArrow.position.distanceTo(camera.position) < 0.12) {
-                    // Player hit
                     scene.remove(targetArrow);
                     targetArrow = null;
-                     targetArrowVelocity.set(0, 0, 0);
                     playerHealth -= targetArrowDamage;
                     if (playerHealth < 0) playerHealth = 0;
                     document.getElementById('health').textContent = playerHealth;
-                    // Game over
                     if (playerHealth <= 0) {
                         document.getElementById('healthboard').textContent = "Game Over! You were hit!";
-                        // Optionally, stop AR session or disable shooting
                         disableShooting();
                         if (xrSession) xrSession.end();
                     }
-                } else if (targetArrow.position.distanceTo(target.position) > 10) {
-                    // Remove arrow if too far
+                } else if (targetArrow.position.distanceTo(target.position) > 20) {
                     scene.remove(targetArrow);
                     targetArrow = null;
-                    targetArrowVelocity.set(0, 0, 0);
                 }
             }
+
             renderer.render(scene, camera);
         }
 
-        // Setup
         if (navigator.xr) {
             document.getElementById('enter-ar').addEventListener('click', () => {
                 if (!renderer) initScene();
@@ -565,5 +590,4 @@ if (target && target.visible) {
         }
     </script>
 </body>
-
 </html>
