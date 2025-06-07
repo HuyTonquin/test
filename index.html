@@ -696,33 +696,21 @@
                 // Hide unsupported message in case it was shown previously
                 document.getElementById('unsupported').style.display = 'none';
 
-                // Clean up previous renderer and scene if any
-                if (renderer) {
-                    renderer.setAnimationLoop(null);
-                    if (renderer.domElement.parentNode) {
-                        renderer.domElement.parentNode.removeChild(renderer.domElement);
-                    }
-                    renderer.dispose();
-                    renderer = null;
+                // Only call initScene if renderer is not present
+                if (!renderer) {
+                    initScene();
+                    // Wait for renderer.domElement to be attached
+                    await new Promise(r => setTimeout(r, 0));
+                } else if (!document.body.contains(renderer.domElement)) {
+                    document.body.appendChild(renderer.domElement);
+                    await new Promise(r => setTimeout(r, 0));
                 }
-                scene = null;
-                camera = null;
-                xrHitTestSource = null;
-                xrViewerSpace = null;
-                xrRefSpace = null;
-                xrSession = null;
 
-                // Always create a new scene and renderer
-                initScene();
-
-                // Wait for next event loop to ensure renderer.domElement is attached
-                await new Promise(r => setTimeout(r, 0));
-
-                // Only call onEnterAR if renderer and its domElement are present and attached
+                // Defensive: check renderer and domElement
                 if (renderer && renderer.domElement && document.body.contains(renderer.domElement)) {
                     onEnterAR();
                 } else {
-                    document.getElementById('unsupported').textContent = 'Renderer not ready. Please try again.';
+                    document.getElementById('unsupported').textContent = 'Renderer not ready. Please reload the page.';
                     document.getElementById('unsupported').style.display = 'block';
                 }
             });
