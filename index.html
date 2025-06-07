@@ -652,18 +652,21 @@
                 scene.remove(targetArrow);
                 targetArrow = null;
             }
-            if (target) {
-                target.visible = false;
-                target.hit = false;
-            }
             if (loadedArrow) {
                 loadedArrow.visible = true;
             }
+            if (target) {
+                scene.remove(target);
+                target = null;
+            }
             if (crossbowGroup) {
-                crossbowGroup.visible = false;
+                scene.remove(crossbowParent);
+                crossbowGroup = null;
+                crossbowParent = null;
             }
             if (reticle) {
-                reticle.visible = false;
+                scene.remove(reticle);
+                reticle = null;
             }
 
             // Reset XR-related variables
