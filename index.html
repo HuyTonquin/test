@@ -359,12 +359,12 @@
                 xrHitTestSource = await xrSession.requestHitTestSource({ space: xrViewerSpace });
 
                 document.getElementById('enter-ar').style.display = 'none';
-                document.getElementById('euler-y-display').style.display = 'block';
 
                 renderer.setAnimationLoop(renderAR);
 
                 xrSession.addEventListener('end', () => {
                     document.getElementById('enter-ar').style.display = 'block';
+                    renderer.setAnimationLoop(null);
                     if (renderer.domElement.parentNode) {
                         renderer.domElement.parentNode.removeChild(renderer.domElement);
                     }
