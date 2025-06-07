@@ -598,20 +598,64 @@
 
         // Add restart logic
         function showRestartButton() {
-            console.log('Showing restart button'); // FIXED: Added debug log
             document.getElementById('restart-btn').style.display = 'block';
         }
         function hideRestartButton() {
-            console.log('Hiding restart button'); // FIXED: Added debug log
             document.getElementById('restart-btn').style.display = 'none';
         }
-        // REPLACED: Minimal resetGame function
+
+        // Replace resetGame with minimal version
         function resetGame() {
-            document.getElementById('health').textContent = 100;
-            document.getElementById('score').textContent = 0;
+            // Reset game variables
+            playerHealth = 100;
+            score = 0;
+            isShooting = false;
+            lastShotTime = -Infinity;
+            targetLastShotTime = -Infinity;
+            crossbowRotationX = 0;
+
+            // Reset UI elements
+            document.getElementById('health').textContent = playerHealth;
+            document.getElementById('score').textContent = score;
+            document.getElementById('healthboard').innerHTML = 'Health: <span id="health">100</span>';
+            document.getElementById('healthboard').style.display = 'none';
+            document.getElementById('scoreboard').style.display = 'none';
             hideRestartButton();
-            document.getElementById('enter-ar').style.display = 'block';
+            document.getElementById('unsupported').style.display = 'none';
+
+            // Remove arrows and target from scene
+            if (arrow) {
+                scene.remove(arrow);
+                arrow = null;
+            }
+            if (targetArrow) {
+                scene.remove(targetArrow);
+                targetArrow = null;
+            }
+            if (loadedArrow) {
+                loadedArrow.visible = true;
+            }
+            if (target) {
+                target.visible = false;
+                target.hit = false;
+            }
+            if (crossbowGroup) {
+                crossbowGroup.visible = false;
+            }
+            if (reticle) {
+                reticle.visible = false;
+            }
         }
+
+        // FIXED: Ensure event listener is added after DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Adding restart button event listener'); // FIXED: Added debug log
+            const restartBtn = document.getElementById('restart-btn');
+            restartBtn.addEventListener('click', () => {
+                console.log('Restart button clicked'); // FIXED: Added debug log
+                resetGame();
+            });
+        });
 
         // Setup
         if (navigator.xr) {
