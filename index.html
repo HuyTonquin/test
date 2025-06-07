@@ -696,15 +696,27 @@
                 // Hide unsupported message in case it was shown previously
                 document.getElementById('unsupported').style.display = 'none';
                 // Always re-initialize renderer and scene before entering AR
-                if (!renderer) {
-                    initScene();
-                } else {
-                    // If renderer exists, ensure its DOM element is attached
-                    if (!document.body.contains(renderer.domElement)) {
-                        document.body.appendChild(renderer.domElement);
+                if (renderer) {
+                    // Clean up previous renderer if any
+                    renderer.setAnimationLoop(null);
+                    if (renderer.domElement.parentNode) {
+                        renderer.domElement.parentNode.removeChild(renderer.domElement);
                     }
+                    renderer.dispose();
+                    renderer = null;
                 }
-                onEnterAR();
+                scene = null;
+                camera = null;
+                xrHitTestSource = null;
+                xrViewerSpace = null;
+                xrRefSpace = null;
+                xrSession = null;
+                // Always create a new scene and renderer
+                initScene();
+                // Ensure renderer's DOM element is attached before requesting AR
+                setTimeout(() => {
+                    onEnterAR();
+                }, 50);
             });
 
             // Remove the patching logic and always show enter-ar after reset
