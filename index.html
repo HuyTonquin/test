@@ -595,8 +595,9 @@
                         document.getElementById('healthboard').textContent = "Game Over! You were hit!";
                         // Optionally, stop AR session or disable shooting
                         disableShooting();
+                         showRestartButton();
                         if (xrSession) xrSession.end();
-                        showRestartButton();
+                       
                     }
                 } else if (targetArrow.position.distanceTo(target.position) > 20) {
                     // Remove arrow if too far
