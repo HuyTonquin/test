@@ -709,10 +709,6 @@
                 document.getElementById('enter-ar').style.display = 'block';
             }
         }
-      
-
-        // Listen for restart button click
-        document.getElementById('restart-btn').addEventListener('click', resetGame);
 
         // Setup
         if (navigator.xr) {
@@ -745,6 +741,7 @@
             document.getElementById('unsupported').style.display = 'block';
             document.getElementById('enter-ar').style.display = 'none';
         }
+            document.getElementById('restart-btn').addEventListener('click', resetGame);
     </script>
 </body>
 
