@@ -40,6 +40,7 @@
             display: none;
         }
 
+        /* Scoreboard styles */
         #scoreboard {
             position: absolute;
             top: 10px;
@@ -54,7 +55,7 @@
 
         #healthboard {
             position: absolute;
-            top: 10px;
+            top: 45px;
             right: 10px;
             background: rgba(220, 20, 60, 0.8);
             color: #fff;
@@ -65,6 +66,7 @@
             transition: box-shadow 0.2s, background 0.2s;
         }
 
+        /* Hit flash animation */
         #healthboard.hit-flash {
             background: #fff !important;
             color: #d00 !important;
@@ -92,35 +94,53 @@
 
 <body>
     <button id="enter-ar">Enter AR</button>
+
     <div id="unsupported">AR not supported on this device/browser.</div>
-    <div id="scoreboard">Score: <span id="score">0</span></div>
-    <div id="euler-y-display" style="position:absolute;top:55px;left:10px;background:rgba(30,144,255,0.7);color:#fff;padding:0.4em 1em;border-radius:0.5em;font-size:1em;z-index:100;display:none;">
-        Yaw (euler.y): <span id="euler-y-value">0</span>
+    <!-- Scoreboard -->
+    <div id="scoreboard"
+        style="position:absolute;top:10px;left:10px;background:rgba(30,144,255,0.8);color:#fff;padding:0.7em 1.2em;border-radius:0.6em;font-size:1.2em;z-index:100;">
+        Score: <span id="score">0</span>
     </div>
-    <div id="healthboard">Health: <span id="health">100</span></div>
+   
+    <!-- Health Display -->
+    <div id="healthboard"
+        style="position:absolute;top:10px;right:10px;background:rgba(220,20,60,0.8);color:#fff;padding:0.7em 1.2em;border-radius:0.6em;font-size:1.2em;z-index:100;">
+        Health: <span id="health">100</span>
+    </div>
+    <!-- Restart Button -->
     <button id="restart-btn">Restart</button>
-    <button id="shoot-btn" style="position: absolute; bottom: 50px; right: 30px; z-index: 101; font-size: 2em; padding: 0.5em 1.2em; border-radius: 0.5em; border: none; background: #1e90ff; color: white; opacity: 0.85; box-shadow: 0 2px 8px rgba(0,0,0,0.2); display: none;">Shoot</button>
+    <!-- Shoot Button -->
+    <button id="shoot-btn"
+        style="position: absolute; bottom: 50px; right: 30px; z-index: 101; font-size: 2em; padding: 0.5em 1.2em; border-radius: 0.5em; border: none; background: #1e90ff; color: white; opacity: 0.85; box-shadow: 0 2px 8px rgba(0,0,0,0.2); display: none;">Shoot</button>
     <script src="https://unpkg.com/three@0.134.0/build/three.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r169/three.min.js"></script>
     <script>
         let xrSession = null;
         let xrRefSpace = null;
         let xrViewerSpace = null;
         let xrHitTestSource = null;
         let renderer, scene, camera, cube, reticle;
+
+        // Crossbow group variables
         let crossbowParent, crossbowGroup, loadedArrow;
-        let target = null;
+
+        let target = null; // Replace cube with target
         let score = 0;
+
+        // Shooting logic variables
         let arrow = null;
         let arrowVelocity = new THREE.Vector3();
         let isShooting = false;
         let lastShotTime = -Infinity;
-        const reloadTime = 1.2;
+        const reloadTime = 1.2; // seconds
+
+        // Target shooting logic variables
         let playerHealth = 100;
         let targetArrow = null;
         let targetArrowVelocity = new THREE.Vector3();
         let targetLastShotTime = -Infinity;
-        const targetReloadTime = 4;
-        const targetArrowDamage = 50;
+        const targetReloadTime = 4; // seconds
+        const targetArrowDamage = 50; // -2 health per hit
 
         function createBullseyeTexture() {
             const size = 256;
@@ -154,23 +174,29 @@
             const mesh = new THREE.Mesh(geometry, material);
             mesh.rotation.x = Math.PI / 2;
             mesh.visible = false;
-            mesh.hit = false;
+            mesh.hit = false; // Add hit property
             return mesh;
         }
 
         function createCrossbowGroup(textureLoader) {
             const group = new THREE.Group();
+
+            // Body
             const bodyGeometry = new THREE.BoxGeometry(0.02, 0.05, 0.25);
             const woodTexture = textureLoader.load('https://threejs.org/examples/textures/hardwood2_diffuse.jpg');
             const bodyMaterial = new THREE.MeshPhongMaterial({ map: woodTexture, shininess: 50 });
             const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
             body.position.set(0, 0, 0.02);
             group.add(body);
+
+            // Stick (add here for crossbow group)
             const stickGeometry = new THREE.CylinderGeometry(0.0008, 0.0008, 0.045, 32);
             const stickMaterial = new THREE.MeshPhongMaterial({ color: 0xff0000, shininess: 100 });
             const stick = new THREE.Mesh(stickGeometry, stickMaterial);
             stick.position.set(-0.006, 0.032, 0.13);
             group.add(stick);
+
+            // Limbs
             const leftLimbCurve = new THREE.CatmullRomCurve3([
                 new THREE.Vector3(0.01, 0.02, -0.09),
                 new THREE.Vector3(0.035, 0.02, -0.1),
@@ -193,6 +219,8 @@
             const rightLimb = createTaperedLimb(rightLimbCurve);
             group.add(leftLimb);
             group.add(rightLimb);
+
+            // String
             const stringCurveSag = new THREE.CatmullRomCurve3([
                 new THREE.Vector3(-0.25, 0.005, -0.11),
                 new THREE.Vector3(0, 0.03, 0.12),
@@ -202,17 +230,23 @@
             const stringMaterial = new THREE.MeshPhongMaterial({ color: 0x888888, shininess: 50 });
             const bowString = new THREE.Mesh(bowStringGeometry, stringMaterial);
             group.add(bowString);
+
+            // Trigger guard
             const triggerGeometry = new THREE.TorusGeometry(0.02, 0.005, 5, 100, Math.PI);
             const metalMaterial = new THREE.MeshPhongMaterial({ color: 0x00ff00, shininess: 100 });
             const triggerGuard = new THREE.Mesh(triggerGeometry, metalMaterial);
             triggerGuard.position.set(0, -0.015, 0.05);
             triggerGuard.rotation.x = Math.PI / 2;
             group.add(triggerGuard);
+
+            // Grip
             const gripGeometry = new THREE.CylinderGeometry(0.01, 0.01, 0.04, 32);
             const grip = new THREE.Mesh(gripGeometry, bodyMaterial);
             grip.position.set(0, -0.02, 0.03);
             grip.rotation.x = Math.PI / 2;
             group.add(grip);
+
+            // Loaded arrow
             loadedArrow = new THREE.Group();
             const loadedShaft = new THREE.Mesh(
                 new THREE.CylinderGeometry(0.003, 0.003, 0.2, 32),
@@ -230,8 +264,11 @@
             loadedArrow.rotation.x = Math.PI / 2;
             loadedArrow.visible = true;
             group.add(loadedArrow);
+
+            // Position crossbow in front of camera
             group.position.set(0, 0.1, -0.3);
             group.rotation.set(0, 0, 0);
+
             return group;
         }
 
@@ -266,6 +303,7 @@
             setupSwipeControls();
         }
 
+        // Add shoot event listener in AR
         function shootArrow() {
             if (!crossbowGroup || !crossbowGroup.visible) return;
             const now = performance.now() / 1000;
@@ -296,17 +334,18 @@
             scene.add(arrow);
         }
 
+        // Add shooting event for AR (only via button)
         function enableShooting() {
             document.getElementById('shoot-btn').style.display = 'block';
             document.getElementById('shoot-btn').addEventListener('click', shootArrow);
         }
-
         function disableShooting() {
             document.getElementById('shoot-btn').style.display = 'none';
             document.getElementById('shoot-btn').removeEventListener('click', shootArrow);
         }
 
         async function onEnterAR() {
+            // Always hide unsupported message when trying to enter AR
             document.getElementById('unsupported').style.display = 'none';
             if (!navigator.xr) {
                 document.getElementById('unsupported').textContent = 'AR not supported on this device/browser.';
@@ -319,16 +358,23 @@
                     requiredFeatures: ['hit-test', 'local-floor']
                 });
                 renderer.xr.setSession(xrSession);
+
                 xrRefSpace = await xrSession.requestReferenceSpace('local-floor');
                 xrViewerSpace = await xrSession.requestReferenceSpace('viewer');
                 xrHitTestSource = await xrSession.requestHitTestSource({ space: xrViewerSpace });
+
                 document.getElementById('enter-ar').style.display = 'none';
-                document.getElementById('euler-y-display').style.display = 'block';
+                // Hide unsupported message after successful AR session start
                 document.getElementById('unsupported').style.display = 'none';
+
                 renderer.setAnimationLoop(renderAR);
+
                 xrSession.addEventListener('end', () => {
                     document.getElementById('enter-ar').style.display = 'block';
                     renderer.setAnimationLoop(null);
+                    if (renderer.domElement.parentNode) {
+                        renderer.domElement.parentNode.removeChild(renderer.domElement);
+                    }
                     xrHitTestSource = null;
                     xrViewerSpace = null;
                     xrRefSpace = null;
@@ -336,37 +382,48 @@
                     disableShooting();
                     document.getElementById('euler-y-display').style.display = 'block';
                 });
+
+                // Place target at random position in front of player on tap
                 renderer.domElement.addEventListener('click', () => {
                     if (reticle && reticle.visible) {
+                        // Get reticle Y (surface height)
                         const surfaceY = new THREE.Vector3().setFromMatrixPosition(reticle.matrix).y;
+                        // Get camera position and orientation
                         renderer.xr.getCamera(camera);
                         const origin = camera.position.clone();
+                        // Random distance between 1.5m and 5m
                         const distance = 1.5 + Math.random() * 3.5;
+                        // Random horizontal angle within +/- 60 degrees in front of user
                         const angle = (Math.random() - 0.5) * Math.PI / 1.5;
+                        // Calculate offset in XZ plane
                         const offset = new THREE.Vector3(
                             Math.sin(angle) * distance,
                             0,
                             -Math.cos(angle) * distance
                         );
+                        // Set target position
                         target.position.copy(origin).add(offset);
                         target.position.y = surfaceY;
                         target.visible = true;
+                        // Debug: log when target is set visible
+                        // console.log('Target placed and visible');
                         target.hit = false;
                         crossbowGroup.visible = true;
                         enableShooting();
                     }
                 });
             } catch (e) {
+                // Only show a generic error if session fails, not the unsupported message
                 document.getElementById('unsupported').textContent = 'Failed to start AR session. Please try again.';
                 document.getElementById('unsupported').style.display = 'block';
                 document.getElementById('enter-ar').style.display = 'block';
             }
         }
-
-        let crossbowRotationX = 0;
+        let crossbowRotationX = 0; // Track manual rotation
         let touchStartY = null;
         let lastTouchY = null;
 
+        // Touch swipe logic for adjusting crossbow rotation.y
         function setupSwipeControls() {
             renderer.domElement.addEventListener('touchstart', (e) => {
                 if (e.touches.length === 1) {
@@ -378,17 +435,19 @@
                 if (e.touches.length === 1 && touchStartY !== null) {
                     const currentY = e.touches[0].clientY;
                     const deltaY = currentY - lastTouchY;
+                    // Sensitivity: adjust as needed (positive deltaY = swipe down)
                     crossbowRotationX += deltaY * 0.005;
+                    // Clamp rotation if desired, e.g. between -1.2 and 1.2 radians
                     crossbowRotationX = Math.max(-1, Math.min(1, crossbowRotationX));
                     lastTouchY = currentY;
                 }
             });
-            renderer.domElement.addEventListener('touchend', () => {
+            renderer.domElement.addEventListener('touchend', (e) => {
                 touchStartY = null;
                 lastTouchY = null;
             });
         }
-
+        // Flash state for healthboard
         let healthFlashTimeout = null;
 
         function flashHealthboard() {
@@ -409,6 +468,8 @@
                     const pose = hit.getPose(xrRefSpace);
                     if (pose) {
                         reticle.visible = true;
+                        // Debug: log when reticle is set visible
+                        // console.log('Reticle visible');
                         reticle.matrix.fromArray(pose.transform.matrix);
                     } else {
                         reticle.visible = false;
@@ -417,6 +478,8 @@
                     reticle.visible = false;
                 }
             }
+
+            // Move crossbow group with camera if visible
             if (crossbowParent && crossbowGroup && crossbowGroup.visible) {
                 renderer.xr.getCamera(camera);
                 const euler = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ');
@@ -424,7 +487,12 @@
                 crossbowParent.position.copy(camera.position).add(fixedOffset);
                 crossbowParent.rotation.set(0, euler.y, 0);
                 crossbowGroup.rotation.set(crossbowRotationX, 0, 0);
+                //document.getElementById('euler-y-value').textContent = (euler.y + crossbowRotationY).toFixed(3);
+
+
             }
+            // --- Stick follows crossbow position only ---
+
             if (target && target.visible) {
                 renderer.xr.getCamera(camera);
                 const dist = target.position.distanceTo(camera.position);
@@ -432,29 +500,37 @@
                 const scale = baseScale / dist * 3.5;
                 target.scale.setScalar(scale);
             }
+            // Arrow movement logic
             if (arrow && isShooting) {
                 arrow.position.x += arrowVelocity.x * 0.016;
                 arrow.position.y += arrowVelocity.y * 0.016;
                 arrow.position.z += arrowVelocity.z * 0.016;
                 arrowVelocity.y -= 0.981 * 0.016;
+
+                // Orient arrow in velocity direction
                 const velocityDirection = arrowVelocity.clone().normalize();
                 if (velocityDirection.lengthSq() > 0) {
                     arrow.lookAt(arrow.position.clone().add(velocityDirection));
                     arrow.rotateX(Math.PI / 2);
                 }
+
+                // Hit detection with target
                 if (target && target.visible && !target.hit && arrow.position.distanceTo(target.position) < 0.1) {
                     scene.remove(arrow);
                     arrow = null;
                     isShooting = false;
                     target.visible = false;
-                    target.hit = true;
+                    target.hit = true; // Mark as hit
                     score += 10;
                     document.getElementById('score').textContent = score;
+                    // Ensure scoreboard is visible
                     document.getElementById('scoreboard').style.display = 'block';
                     setTimeout(() => {
                         if (loadedArrow) loadedArrow.visible = true;
                     }, reloadTime * 1000);
-                } else if (arrow && (arrow.position.distanceTo(camera.position) > 10 || arrow.position.y < -2)) {
+                }
+                // Remove arrow if too far or below ground
+                else if (arrow && (arrow.position.distanceTo(camera.position) > 10 || arrow.position.y < -2)) {
                     scene.remove(arrow);
                     arrow = null;
                     isShooting = false;
@@ -463,9 +539,12 @@
                     }, reloadTime * 1000);
                 }
             }
+
+            // Target shooting logic
             if (target && target.visible) {
                 const now = performance.now() / 1000;
                 if (!targetArrow && now - targetLastShotTime > targetReloadTime) {
+                    // Shoot arrow at player
                     targetArrow = new THREE.Group();
                     const shaft = new THREE.Mesh(
                         new THREE.CylinderGeometry(0.005, 0.005, 0.08, 12),
@@ -478,55 +557,69 @@
                     tip.position.set(0, 0.08, 0);
                     targetArrow.add(shaft);
                     targetArrow.add(tip);
+                    // Place at target position
                     targetArrow.position.copy(target.position);
+                    // Aim at player (camera)
                     renderer.xr.getCamera(camera);
                     const direction = camera.position.clone().sub(target.position).normalize();
                     targetArrow.lookAt(camera.position);
+                    // Set velocity toward player
                     targetArrowVelocity.copy(direction).multiplyScalar(10);
                     scene.add(targetArrow);
                     targetLastShotTime = now;
                 }
             }
+
+            // Move target arrow
             if (targetArrow) {
                 targetArrow.position.x += targetArrowVelocity.x * 0.016;
                 targetArrow.position.y += targetArrowVelocity.y * 0.016;
                 targetArrow.position.z += targetArrowVelocity.z * 0.016;
+                // Orient arrow in velocity direction
                 const velocityDirection = targetArrowVelocity.clone().normalize();
                 if (velocityDirection.lengthSq() > 0) {
                     targetArrow.lookAt(targetArrow.position.clone().add(velocityDirection));
                     targetArrow.rotateX(Math.PI / 2);
                 }
+                // Hit detection with player (camera)
                 renderer.xr.getCamera(camera);
                 if (targetArrow.position.distanceTo(camera.position) < 0.12) {
+                    // Player hit
                     scene.remove(targetArrow);
                     targetArrow = null;
                     playerHealth -= targetArrowDamage;
                     if (playerHealth < 0) playerHealth = 0;
                     document.getElementById('health').textContent = playerHealth;
+                    // Flash healthboard on hit
                     flashHealthboard();
+                    // Game over
                     if (playerHealth <= 0) {
                         document.getElementById('healthboard').textContent = "Game Over! You were hit!";
+                        // Optionally, stop AR session or disable shooting
                         disableShooting();
                         if (xrSession) xrSession.end();
                         showRestartButton();
                     }
                 } else if (targetArrow.position.distanceTo(target.position) > 20) {
+                    // Remove arrow if too far
                     scene.remove(targetArrow);
                     targetArrow = null;
                 }
             }
+
+            // Always show healthboard during AR
             document.getElementById('healthboard').style.display = 'block';
+
             renderer.render(scene, camera);
         }
 
+        // Add restart logic
         function showRestartButton() {
             document.getElementById('restart-btn').style.display = 'block';
         }
-
         function hideRestartButton() {
             document.getElementById('restart-btn').style.display = 'none';
         }
-
         function resetGame() {
             // Reset game variables
             playerHealth = 100;
@@ -543,10 +636,10 @@
             document.getElementById('healthboard').style.display = 'none';
             document.getElementById('scoreboard').style.display = 'none';
             hideRestartButton();
-            d//ocument.getElementById('enter-ar').style.display = 'block';
+            document.getElementById('enter-ar').style.display = 'none';
             document.getElementById('unsupported').style.display = 'none';
 
-            // Clear scene objects
+            // Remove arrows and target from scene
             if (arrow) {
                 scene.remove(arrow);
                 arrow = null;
@@ -555,74 +648,111 @@
                 scene.remove(targetArrow);
                 targetArrow = null;
             }
+            if (loadedArrow) {
+                loadedArrow.visible = true;
+            }
             if (target) {
-                scene.remove(target);
-                target = null;
+                target.visible = false;
+                target.hit = false;
             }
+            // Reset crossbow
             if (crossbowGroup) {
-                scene.remove(crossbowParent);
-                crossbowGroup = null;
-                crossbowParent = null;
+                crossbowGroup.visible = false;
             }
+            // Reset reticle
             if (reticle) {
-                scene.remove(reticle);
-                reticle = null;
+                reticle.visible = false;
             }
 
-            // Reset XR-related variables
-            if (xrHitTestSource) {
-                xrHitTestSource.cancel();
-                xrHitTestSource = null;
-            }
-            xrViewerSpace = null;
-            xrRefSpace = null;
-
-            // Clean up renderer and scene
-            if (renderer) {
-                renderer.setAnimationLoop(null);
-                if (renderer.domElement.parentNode) {
-                    renderer.domElement.parentNode.removeChild(renderer.domElement);
-                }
-                renderer.dispose();
-                renderer = null;
-            }
-            if (scene) {
-                scene = null;
-            }
-            camera = null;
-
-            // End XR session if active
-           if (xrSession) {
-                xrSession.end().then(() => {
-                    xrSession = null;
-                   
-                    // Delay to ensure XR session is fully closed before requesting a new one
-                    setTimeout(() => {
-                         initScene();
-                        onEnterAR();
-                    }, 200); // 200ms delay
-                });
+            // End XR session if active, will re-enter AR in the 'end' event handler
+            if (xrSession) {
+                xrSession.end();
             } else {
-                // Reinitialize scene and start AR session if no XR session
+                // If not in AR, re-init scene and show enter-ar button
+                if (renderer) {
+                    renderer.setAnimationLoop(null);
+                    if (renderer.domElement.parentNode) {
+                        renderer.domElement.parentNode.removeChild(renderer.domElement);
+                    }
+                    renderer.dispose();
+                    renderer = null;
+                }
+                scene = null;
+                camera = null;
+                xrHitTestSource = null;
+                xrViewerSpace = null;
+                xrRefSpace = null;
+                xrSession = null;
                 initScene();
-                setTimeout(() => {
-                    onEnterAR();
-                }, 100); // 100ms delay for consistency
+                document.getElementById('enter-ar').style.display = 'block';
             }
         }
 
+        // Listen for restart button click
         document.getElementById('restart-btn').addEventListener('click', resetGame);
 
+        // Setup
         if (navigator.xr) {
             document.getElementById('enter-ar').addEventListener('click', () => {
+                // Hide unsupported message in case it was shown previously
                 document.getElementById('unsupported').style.display = 'none';
+                // Always re-initialize renderer and scene before entering AR
                 if (!renderer) {
                     initScene();
-                } else if (!document.body.contains(renderer.domElement)) {
-                    document.body.appendChild(renderer.domElement);
+                } else {
+                    // If renderer exists, ensure its DOM element is attached
+                    if (!document.body.contains(renderer.domElement)) {
+                        document.body.appendChild(renderer.domElement);
+                    }
                 }
                 onEnterAR();
             });
+
+            // Add: After XR session ends (including after reset), re-enter AR if restart was requested
+            if (!window._arSessionEndHandlerAdded) {
+                window._arSessionEndHandlerAdded = true;
+                let wasRestarting = false;
+                const origResetGame = resetGame;
+                resetGame = function() {
+                    wasRestarting = true;
+                    origResetGame();
+                };
+                // Listen for XR session end to re-enter AR if needed
+                (function patchXrSessionEnd() {
+                    const origOnEnterAR = onEnterAR;
+                    onEnterAR = async function() {
+                        wasRestarting = false;
+                        await origOnEnterAR();
+                    };
+                    // Patch renderer.xr.setSession to add end event
+                    const origSetSession = THREE.WebGLRenderer.prototype.xr.setSession;
+                    THREE.WebGLRenderer.prototype.xr.setSession = function(session) {
+                        origSetSession.call(this, session);
+                        session.addEventListener('end', () => {
+                            if (wasRestarting) {
+                                setTimeout(() => {
+                                    if (!xrSession) {
+                                        initScene();
+                                        onEnterAR();
+                                    }
+                                }, 200);
+                            } else {
+                                document.getElementById('enter-ar').style.display = 'block';
+                                renderer.setAnimationLoop(null);
+                                if (renderer.domElement.parentNode) {
+                                    renderer.domElement.parentNode.removeChild(renderer.domElement);
+                                }
+                                xrHitTestSource = null;
+                                xrViewerSpace = null;
+                                xrRefSpace = null;
+                                xrSession = null;
+                                disableShooting();
+                                document.getElementById('euler-y-display').style.display = 'block';
+                            }
+                        });
+                    };
+                })();
+            }
         } else {
             document.getElementById('unsupported').style.display = 'block';
             document.getElementById('enter-ar').style.display = 'none';
