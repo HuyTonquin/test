@@ -139,7 +139,7 @@
         let targetArrowVelocity = new THREE.Vector3();
         let targetLastShotTime = -Infinity;
         const targetReloadTime = 4; // seconds
-        const targetArrowDamage = 2; // -2 health per hit
+        const targetArrowDamage = 50; // -2 health per hit
 
         function createBullseyeTexture() {
             const size = 256;
@@ -684,10 +684,19 @@
         document.getElementById('restart-btn').addEventListener('click', resetGame);
 
         // Setup
-        if (navigator.xr) {
+       if (navigator.xr) {
             document.getElementById('enter-ar').addEventListener('click', () => {
+                // Hide unsupported message in case it was shown previously
                 document.getElementById('unsupported').style.display = 'none';
-                if (!renderer) initScene();
+                // Always re-initialize renderer and scene before entering AR
+                if (!renderer) {
+                    initScene();
+                } else {
+                    // If renderer exists, ensure its DOM element is attached
+                    if (!document.body.contains(renderer.domElement)) {
+                        document.body.appendChild(renderer.domElement);
+                    }
+                }
                 onEnterAR();
             });
         } else {
