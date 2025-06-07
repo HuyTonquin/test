@@ -236,7 +236,7 @@
         }
 
         function initScene() {
-            console.log('initScene called'); // FIXED: Debug log
+            console.log('initScene called');
             if (!window.THREE) {
                 console.error('Three.js not loaded');
                 alert('Three.js failed to load');
@@ -379,7 +379,7 @@
                 return true;
             } catch (e) {
                 console.error('Failed to start AR session:', e);
-                alert('AR session failed: ' + (e.message || 'Unknown error')); // FIXED: Fallback for undefined message
+                alert('AR session failed: ' + (e.message || 'Unknown error'));
                 if (unsupported) unsupported.textContent = 'Failed to start AR session: ' + (e.message || 'Unknown error');
                 if (unsupported) unsupported.style.display = 'block';
                 if (enterAr) enterAr.style.display = 'block';
@@ -523,7 +523,7 @@
                 targetArrow.position.z += targetArrowVelocity.z * 0.016;
                 const velocityDirection = targetArrowVelocity.clone().normalize();
                 if (velocityDirection.lengthSq() > 0) {
-                    targetArrow.lookAt(targetArrow.position.clone().add(velocityDirection));
+                    arrow.lookAt(targetArrow.position.clone().add(velocityDirection));
                     targetArrow.rotateX(Math.PI / 2);
                 }
                 renderer.xr.getCamera(camera);
@@ -573,171 +573,170 @@
         async function resetGame() {
             console.log('resetGame started');
             alert('Resetting game');
-            // NEW: Granular try-catch blocks to isolate error
             try {
                 // Reset game variables
-                console.log('Resetting game variables');
-                playerHealth = 100;
-                score = 0;
-                isShooting = false;
-                lastShotTime = -Infinity;
-                targetLastShotTime = -Infinity;
-                crossbowRotationX = 0;
-            } catch (e) {
-                console.error('Error resetting variables:', e);
-                throw new Error('Failed to reset variables: ' + (e.message || 'Unknown error')); // NEW: Rethrow with details
-            }
+                try {
+                    console.log('Resetting game variables');
+                    playerHealth = 100;
+                    score = 0;
+                    isShooting = false;
+                    lastShotTime = -Infinity;
+                    targetLastShotTime = -Infinity;
+                    crossbowRotationX = 0;
+                } catch (e) {
+                    console.error('Error resetting variables:', e);
+                    throw new Error('Failed to reset variables: ' + (e.message || 'Unknown error'));
+                }
 
-            try {
                 // Reset UI elements
-                console.log('Resetting UI elements');
-                const healthSpan = document.getElementById('health');
-                const healthboard = document.getElementById('healthboard');
-                const scoreSpan = document.getElementById('score');
-                const scoreboard = document.getElementById('scoreboard');
-                const unsupported = document.getElementById('unsupported');
-                const enterAr = document.getElementById('enter-ar');
-                if (healthSpan) healthSpan.textContent = playerHealth;
-                if (healthboard) healthboard.innerHTML = 'Health: <span id="health">100</span>';
-                if (healthboard) healthboard.style.display = 'none';
-                if (scoreSpan) scoreSpan.textContent = score;
-                if (scoreboard) scoreboard.style.display = 'none';
-                hideRestartButton();
-                if (unsupported) unsupported.style.display = 'none';
-                if (enterAr) enterAr.style.display = 'none';
-            } catch (e) {
-                console.error('Error resetting UI:', e);
-                throw new Error('Failed to reset UI: ' + (e.message || 'Unknown error')); // NEW: Rethrow with details
-            }
-
-            try {
-                // Clean up scene objects
-                console.log('Cleaning up scene objects');
-                if (arrow && scene) {
-                    scene.remove(arrow);
-                    arrow = null;
-                }
-                if (targetArrow && scene) {
-                    scene.remove(targetArrow);
-                    targetArrow = null;
-                }
-                if (loadedArrow) loadedArrow.visible = true;
-                if (target) {
-                    target.visible = false;
-                    target.hit = false;
-                }
-                if (crossbowGroup) crossbowGroup.visible = false;
-                if (reticle) reticle.visible = false;
-            } catch (e) {
-                console.error('Error cleaning scene:', e);
-                throw new Error('Failed to clean scene: ' + (e.message || 'Unknown error')); // NEW: Rethrow with details
-            }
-
-            try {
-                // End XR session
-                console.log('Ending XR session');
-                if (xrSession) {
-                    await xrSession.end();
-                    console.log('XR session ended');
-                    xrSession = null;
-                }
-                xrHitTestSource = null;
-                xrViewerSpace = null;
-                xrRefSpace = null;
-            } catch (e) {
-                console.error('Error ending XR session:', e);
-                throw new Error('Failed to end XR session: ' + (e.message || 'Unknown error')); // NEW: Rethrow with details
-            }
-
-            try {
-                // Clean up renderer
-                console.log('Cleaning up renderer');
-                if (renderer) {
-                    renderer.setAnimationLoop(null);
-                    if (renderer.domElement && renderer.domElement.parentNode) {
-                        renderer.domElement.parentNode.removeChild(renderer.domElement);
-                    }
-                    renderer.dispose();
-                    renderer = null;
-                }
-                scene = null;
-                camera = null;
-            } catch (e) {
-                console.error('Error cleaning renderer:', e);
-                throw new Error('Failed to clean renderer: ' + (e.message || 'Unknown error')); // NEW: Rethrow with details
-            }
-
-            try {
-                // Reinitialize scene
-                console.log('Calling initScene');
-                const sceneInitialized = initScene();
-                if (!sceneInitialized) {
-                    console.error('initScene failed');
-                    alert('Scene initialization failed');
+                try {
+                    console.log('Resetting UI elements');
+                    const healthSpan = document.getElementById('health');
+                    const healthboard = document.getElementById('healthboard');
+                    const scoreSpan = document.getElementById('score');
+                    const scoreboard = document.getElementById('scoreboard');
                     const unsupported = document.getElementById('unsupported');
                     const enterAr = document.getElementById('enter-ar');
-                    if (unsupported) unsupported.textContent = 'Failed to initialize scene. Please reload the page.';
-                    if (unsupported) unsupported.style.display = 'block';
-                    if (enterAr) enterAr.style.display = 'block';
-                    return;
+                    if (healthSpan) healthSpan.textContent = playerHealth;
+                    if (healthboard) healthboard.innerHTML = 'Health: <span id="health">100</span>';
+                    if (healthboard) healthboard.style.display = 'none';
+                    if (scoreSpan) scoreSpan.textContent = score;
+                    if (scoreboard) scoreboard.style.display = 'none';
+                    hideRestartButton();
+                    if (unsupported) unsupported.style.display = 'none';
+                    if (enterAr) enterAr.style.display = 'none';
+                } catch (e) {
+                    console.error('Error resetting UI:', e);
+                    throw new Error('Failed to reset UI: ' + (e.message || 'Unknown error'));
                 }
-            } catch (e) {
-                console.error('Error initializing scene:', e);
-                throw new Error('Failed to initialize scene: ' + (e.message || 'Unknown error')); // NEW: Rethrow with details
-            }
 
-            try {
-                // Wait for DOM to settle
-                console.log('Waiting for DOM');
-                await new Promise(resolve => setTimeout(resolve, 200));
-            } catch (e) {
-                console.error('Error waiting for DOM:', e);
-                throw new Error('Failed waiting for DOM: ' + (e.message || 'Unknown error')); // NEW: Rethrow with details
-            }
+                // Clean up scene objects
+                try {
+                    console.log('Cleaning up scene objects');
+                    if (arrow && scene) {
+                        scene.remove(arrow);
+                        arrow = null;
+                    }
+                    if (targetArrow && scene) {
+                        scene.remove(targetArrow);
+                        targetArrow = null;
+                    }
+                    if (loadedArrow) loadedArrow.visible = true;
+                    if (target) {
+                        target.visible = false;
+                        target.hit = false;
+                    }
+                    if (crossbowGroup) crossbowGroup.visible = false;
+                    if (reticle) reticle.visible = false;
+                } catch (e) {
+                    console.error('Error cleaning scene:', e);
+                    throw new Error('Failed to clean scene: ' + (e.message || 'Unknown error'));
+                }
 
-            try {
-                // Start AR session
-                console.log('Calling onEnterAR');
-                if (renderer && renderer.domElement && document.body.contains(renderer.domElement)) {
-                    const arStarted = await onEnterAR();
-                    if (!arStarted) {
-                        console.error('onEnterAR failed');
-                        alert('AR session failed to start');
+                // End XR session
+                try {
+                    console.log('Ending XR session');
+                    if (xrSession) {
+                        await xrSession.end();
+                        console.log('XR session ended');
+                        xrSession = null;
+                    }
+                    xrHitTestSource = null;
+                    xrViewerSpace = null;
+                    xrRefSpace = null;
+                } catch (e) {
+                    console.error('Error ending XR session:', e);
+                    throw new Error('Failed to end XR session: ' + (e.message || 'Unknown error'));
+                }
+
+                // Clean up renderer
+                try {
+                    console.log('Cleaning up renderer');
+                    if (renderer) {
+                        renderer.setAnimationLoop(null);
+                        if (renderer.domElement && renderer.domElement.parentNode) {
+                            renderer.domElement.parentNode.removeChild(renderer.domElement);
+                        }
+                        renderer.dispose();
+                        renderer = null;
+                    }
+                    scene = null;
+                    camera = null;
+                } catch (e) {
+                    console.error('Error cleaning renderer:', e);
+                    throw new Error('Failed to clean renderer: ' + (e.message || 'Unknown error'));
+                }
+
+                // Reinitialize scene
+                try {
+                    console.log('Calling initScene');
+                    const sceneInitialized = initScene();
+                    if (!sceneInitialized) {
+                        console.error('initScene failed');
+                        alert('Scene initialization failed');
                         const unsupported = document.getElementById('unsupported');
                         const enterAr = document.getElementById('enter-ar');
-                        if (unsupported) unsupported.textContent = 'Failed to start AR session. Please try again.';
+                        if (unsupported) unsupported.textContent = 'Failed to initialize scene. Please reload the page.';
                         if (unsupported) unsupported.style.display = 'block';
                         if (enterAr) enterAr.style.display = 'block';
-                    } else {
-                        console.log('Game reset and AR started');
-                        alert('Game reset complete');
+                        return;
                     }
-                } else {
-                    console.error('Renderer not ready');
-                    alert('Renderer not ready');
-                    const unsupported = document.getElementById('unsupported');
-                    const enterAr = document.getElementById('enter-ar');
-                    if (unsupported) unsupported.textContent = 'Renderer not ready. Please reload the page.';
-                    if (unsupported) unsupported.style.display = 'block';
-                    if (enterAr) enterAr.style.display = 'block';
+                } catch (e) {
+                    console.error('Error initializing scene:', e);
+                    throw new Error('Failed to initialize scene: ' + (e.message || 'Unknown error'));
+                }
+
+                // Wait for DOM to settle
+                try {
+                    console.log('Waiting for DOM');
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                } catch (e) {
+                    console.error('Error waiting for DOM:', e);
+                    throw new Error('Failed waiting for DOM: ' + (e.message || 'Unknown error'));
+                }
+
+                // Start AR session
+                try {
+                    console.log('Calling onEnterAR');
+                    if (renderer && renderer.domElement && document.body.contains(renderer.domElement)) {
+                        const arStarted = await onEnterAR();
+                        if (!arStarted) {
+                            console.error('onEnterAR failed');
+                            alert('AR session failed to start');
+                            const unsupported = document.getElementById('unsupported');
+                            const enterAr = document.getElementById('enter-ar');
+                            if (unsupported) unsupported.textContent = 'Failed to start AR session. Please try again.';
+                            if (unsupported) unsupported.style.display = 'block';
+                            if (enterAr) enterAr.style.display = 'block';
+                        } else {
+                            console.log('Game reset and AR started');
+                            alert('Game reset complete');
+                        }
+                    } else {
+                        console.error('Renderer not ready');
+                        alert('Renderer not ready');
+                        const unsupported = document.getElementById('unsupported');
+                        const enterAr = document.getElementById('enter-ar');
+                        if (unsupported) unsupported.textContent = 'Renderer not ready. Please reload the page.';
+                        if (unsupported) unsupported.style.display = 'block';
+                        if (enterAr) enterAr.style.display = 'block';
+                    }
+                } catch (e) {
+                    console.error('Error starting AR:', e);
+                    throw new Error('Failed to start AR: ' + (e.message || 'Unknown error'));
                 }
             } catch (e) {
-                console.error('Error starting AR:', e);
-                throw new Error('Failed to start AR: ' + (e.message || 'Unknown error')); // NEW: Rethrow with details
+                console.error('resetGame error:', e);
+                const errorMessage = e && e.message ? e.message : 'Unknown error (error object may be undefined)';
+                alert('Reset failed: ' + errorMessage);
+                const unsupported = document.getElementById('unsupported');
+                const enterAr = document.getElementById('enter-ar');
+                if (unsupported) unsupported.textContent = 'Reset failed: ' + errorMessage;
+                if (unsupported) unsupported.style.display = 'block';
+                if (enterAr) enterAr.style.display = 'block';
             }
-        } catch (e) {
-            // FIXED: Robust error handling for undefined or malformed errors
-            console.error('resetGame error:', e);
-            const errorMessage = e && e.message ? e.message : 'Unknown error (error object may be undefined)';
-            alert('Reset failed: ' + errorMessage);
-            const unsupported = document.getElementById('unsupported');
-            const enterAr = document.getElementById('enter-ar');
-            if (unsupported) unsupported.textContent = 'Reset failed: ' + errorMessage;
-            if (unsupported) unsupported.style.display = 'block';
-            if (enterAr) enterAr.style.display = 'block';
+            console.log('resetGame ended');
         }
-        console.log('resetGame ended'); // NEW: Debug log to confirm completion
-    }
 
         document.addEventListener('DOMContentLoaded', () => {
             console.log('DOM loaded, setting up event listeners');
