@@ -542,9 +542,8 @@
             document.getElementById('healthboard').innerHTML = 'Health: <span id="health">100</span>';
             document.getElementById('healthboard').style.display = 'none';
             document.getElementById('scoreboard').style.display = 'none';
-            document.getElementById('euler-y-display').style.display = 'none';
             hideRestartButton();
-            document.getElementById('enter-ar').style.display = 'block';
+            d//ocument.getElementById('enter-ar').style.display = 'block';
             document.getElementById('unsupported').style.display = 'none';
 
             // Clear scene objects
@@ -601,20 +600,9 @@
                 });
             } else {
                 // Reinitialize scene immediately if no XR session
-                initScene();
-            }
-
-            // Reattach enter-ar event listener
-            //document.getElementById('enter-ar').removeEventListener('click', onEnterAR);
-            document.getElementById('enter-ar').addEventListener('click', () => {
-                document.getElementById('unsupported').style.display = 'none';
-                if (!renderer) {
-                    initScene();
-                } else if (!document.body.contains(renderer.domElement)) {
-                    document.body.appendChild(renderer.domElement);
-                }
+                initScene();           
                 onEnterAR();
-            });
+            }
         }
 
         document.getElementById('restart-btn').addEventListener('click', resetGame);
