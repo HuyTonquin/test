@@ -413,11 +413,10 @@
                     }
                 });
             } catch (e) {
-                if (!xrSession) { // Only show error if not already in a session
-                    document.getElementById('unsupported').textContent = 'Failed to start AR session. Please try again.';
-                    document.getElementById('unsupported').style.display = 'block';
-                    document.getElementById('enter-ar').style.display = 'block';
-                }
+                // Only show a generic error if session fails, not the unsupported message
+                document.getElementById('unsupported').textContent = 'Failed to start AR session. Please try again.';
+                document.getElementById('unsupported').style.display = 'block';
+                document.getElementById('enter-ar').style.display = 'block';
             }
         }
         let crossbowRotationX = 0; // Track manual rotation
@@ -665,28 +664,27 @@
                 reticle.visible = false;
             }
 
-            // End XR session if active, will re-enter AR in the 'end' event handler
+            // End XR session if active, will re-init scene and show enter-ar button
             if (xrSession) {
                 xrSession.end();
-            } else {
-                // If not in AR, re-init scene and show enter-ar button
-                if (renderer) {
-                    renderer.setAnimationLoop(null);
-                    if (renderer.domElement.parentNode) {
-                        renderer.domElement.parentNode.removeChild(renderer.domElement);
-                    }
-                    renderer.dispose();
-                    renderer = null;
-                }
-                scene = null;
-                camera = null;
-                xrHitTestSource = null;
-                xrViewerSpace = null;
-                xrRefSpace = null;
-                xrSession = null;
-                initScene();
-                document.getElementById('enter-ar').style.display = 'block';
             }
+            // Always clean up renderer and scene, then show enter-ar
+            if (renderer) {
+                renderer.setAnimationLoop(null);
+                if (renderer.domElement.parentNode) {
+                    renderer.domElement.parentNode.removeChild(renderer.domElement);
+                }
+                renderer.dispose();
+                renderer = null;
+            }
+            scene = null;
+            camera = null;
+            xrHitTestSource = null;
+            xrViewerSpace = null;
+            xrRefSpace = null;
+            xrSession = null;
+            initScene();
+            document.getElementById('enter-ar').style.display = 'block';
         }
 
         // Listen for restart button click
@@ -694,74 +692,23 @@
 
         // Setup
         if (navigator.xr) {
-            let arStarting = false; // Prevent double AR session requests
-
-            document.getElementById('enter-ar').addEventListener('click', async () => {
-                if (arStarting) return;
-                arStarting = true;
-                document.getElementById('enter-ar').disabled = true;
+            document.getElementById('enter-ar').addEventListener('click', () => {
+                // Hide unsupported message in case it was shown previously
                 document.getElementById('unsupported').style.display = 'none';
                 // Always re-initialize renderer and scene before entering AR
                 if (!renderer) {
                     initScene();
                 } else {
+                    // If renderer exists, ensure its DOM element is attached
                     if (!document.body.contains(renderer.domElement)) {
                         document.body.appendChild(renderer.domElement);
                     }
                 }
-                try {
-                    await onEnterAR();
-                } finally {
-                    arStarting = false;
-                    document.getElementById('enter-ar').disabled = false;
-                }
+                onEnterAR();
             });
 
-            // Add: After XR session ends (including after reset), re-enter AR if restart was requested
-            if (!window._arSessionEndHandlerAdded) {
-                window._arSessionEndHandlerAdded = true;
-                let wasRestarting = false;
-                const origResetGame = resetGame;
-                resetGame = function() {
-                    wasRestarting = true;
-                    origResetGame();
-                };
-                // Listen for XR session end to re-enter AR if needed
-                (function patchXrSessionEnd() {
-                    const origOnEnterAR = onEnterAR;
-                    onEnterAR = async function() {
-                        wasRestarting = false;
-                        await origOnEnterAR();
-                    };
-                    // Patch renderer.xr.setSession to add end event
-                    const origSetSession = THREE.WebGLRenderer.prototype.xr.setSession;
-                    THREE.WebGLRenderer.prototype.xr.setSession = function(session) {
-                        origSetSession.call(this, session);
-                        session.addEventListener('end', () => {
-                            if (wasRestarting) {
-                                setTimeout(() => {
-                                    if (!xrSession) {
-                                        initScene();
-                                        onEnterAR();
-                                    }
-                                }, 200);
-                            } else {
-                                document.getElementById('enter-ar').style.display = 'block';
-                                renderer.setAnimationLoop(null);
-                                if (renderer.domElement.parentNode) {
-                                    renderer.domElement.parentNode.removeChild(renderer.domElement);
-                                }
-                                xrHitTestSource = null;
-                                xrViewerSpace = null;
-                                xrRefSpace = null;
-                                xrSession = null;
-                                disableShooting();
-                                document.getElementById('euler-y-display').style.display = 'block';
-                            }
-                        });
-                    };
-                })();
-            }
+            // Remove the patching logic and always show enter-ar after reset
+            // No need for wasRestarting or patchXrSessionEnd
         } else {
             document.getElementById('unsupported').style.display = 'block';
             document.getElementById('enter-ar').style.display = 'none';
