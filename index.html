@@ -624,70 +624,67 @@
         function hideRestartButton() {
             document.getElementById('restart-btn').style.display = 'none';
         }
-        function resetGame() {
-            // Reset variables
-            let restartAR = () => {
-                // Reset game variables
-                playerHealth = 100;
-                score = 0;
-                isShooting = false;
-                lastShotTime = -Infinity;
-                targetLastShotTime = -Infinity;
-                crossbowRotationX = 0;
+         function resetGame() {
+            // Reset game variables
+            playerHealth = 100;
+            score = 0;
+            isShooting = false;
+            lastShotTime = -Infinity;
+            targetLastShotTime = -Infinity;
+            crossbowRotationX = 0;
 
-                // Reset UI elements
-                document.getElementById('health').textContent = playerHealth;
-                document.getElementById('score').textContent = score;
-                document.getElementById('healthboard').innerHTML = 'Health: <span id="health">100</span>';
-                document.getElementById('healthboard').style.display = 'none';
-                document.getElementById('scoreboard').style.display = 'none';
-                hideRestartButton();
+            // Reset UI elements
+            document.getElementById('health').textContent = playerHealth;
+            document.getElementById('score').textContent = score;
+            document.getElementById('healthboard').innerHTML = 'Health: <span id="health">100</span>';
+            document.getElementById('healthboard').style.display = 'none';
+            document.getElementById('scoreboard').style.display = 'none';
+            hideRestartButton();
+            document.getElementById('enter-ar').style.display = 'block';
+            document.getElementById('unsupported').style.display = 'none';
+           
+            // Clear scene objects
+            if (arrow) {
+                scene.remove(arrow);
+                arrow = null;
+            }
+            if (targetArrow) {
+                scene.remove(targetArrow);
+                targetArrow = null;
+            }
+            if (target) {
+                target.visible = false;
+                target.hit = false;
+            }
+            if (loadedArrow) {
+                loadedArrow.visible = true;
+            }
+            if (crossbowGroup) {
+                crossbowGroup.visible = false;
+            }
+            if (reticle) {
+                reticle.visible = false;
+            }
 
-                // Clear scene objects
-                if (arrow) {
-                    scene.remove(arrow);
-                    arrow = null;
-                }
-                if (targetArrow) {
-                    scene.remove(targetArrow);
-                    targetArrow = null;
-                }
-                if (target) {
-                    target.visible = false;
-                    target.hit = false;
-                }
-                if (loadedArrow) {
-                    loadedArrow.visible = true;
-                }
-                if (crossbowGroup) {
-                    crossbowGroup.visible = false;
-                }
-                if (reticle) {
-                    reticle.visible = false;
-                }
+            // Reset XR-related variables
+            xrHitTestSource = null;
+            xrViewerSpace = null;
+            xrRefSpace = null;
 
-                // Reset XR-related variables
-                xrHitTestSource = null;
-                xrViewerSpace = null;
-                xrRefSpace = null;
-
-                // Clean up renderer and re-initialize scene
-                 if (renderer && !document.body.contains(renderer.domElement)) {
-                    document.body.appendChild(renderer.domElement);
+            // Clean up renderer and remove canvas
+            if (renderer) {
+                renderer.setAnimationLoop(null);
+                if (renderer.domElement.parentNode) {
+                    renderer.domElement.parentNode.removeChild(renderer.domElement);
                 }
-                onEnterAR();
-            };
+                renderer.dispose();
+                renderer = null;
+            }
 
+            // End XR session if active, but do not auto-restart AR
             if (xrSession) {
-                // Wait for session to end before restarting AR
-                xrSession.addEventListener('end', function onEnded() {
-                    xrSession.removeEventListener('end', onEnded);
-                    xrSession = null;
-                    restartAR();
-                });
                 xrSession.end();
-            } else {
-                restartAR();
+                xrSession = null;
             }
         }
         document.getElementById('restart-btn').addEventListener('click', resetGame);
