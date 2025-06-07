@@ -361,6 +361,7 @@
                 xrHitTestSource = await xrSession.requestHitTestSource({ space: xrViewerSpace });
 
                 document.getElementById('enter-ar').style.display = 'none';
+                 document.getElementById('unsupported').style.display = 'none';
 
                 renderer.setAnimationLoop(renderAR);
 
