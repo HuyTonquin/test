@@ -192,7 +192,7 @@
             const stickGeometry = new THREE.CylinderGeometry(0.0008, 0.0008, 0.045, 32);
             const stickMaterial = new THREE.MeshPhongMaterial({ color: 0xff0000, shininess: 100 });
             const stick = new THREE.Mesh(stickGeometry, stickMaterial);
-            stick.position.set(0, 0.032, 0.13);
+            stick.position.set(-0.003, 0.032, 0.13);
             group.add(stick);
 
             // Limbs
@@ -611,6 +611,8 @@ arrowVelocity.copy(direction).multiplyScalar(baseSpeed);
         function hideRestartButton() {
             document.getElementById('restart-btn').style.display = 'none';
         }
+
+        let isRestarting = false;
         function resetGame() {
             // Reset variables
             playerHealth = 100;
@@ -629,8 +631,22 @@ arrowVelocity.copy(direction).multiplyScalar(baseSpeed);
             crossbowGroup.visible = false;
             isShooting = false;
             // Always re-enter AR mode
-            if (!renderer) initScene();
-            onEnterAR();
+            if (isRestarting) return;
+            isRestarting = true;
+
+            // If an XR session is active, wait for it to end before starting a new one
+            if (xrSession) {
+                xrSession.addEventListener('end', () => {
+                    isRestarting = false;
+                    if (!renderer) initScene();
+                    onEnterAR();
+                }, { once: true });
+                xrSession.end();
+            } else {
+                isRestarting = false;
+                if (!renderer) initScene();
+                onEnterAR();
+            }
         }
 
         document.getElementById('restart-btn').addEventListener('click', resetGame);
