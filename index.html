@@ -692,10 +692,11 @@
 
         // Setup
         if (navigator.xr) {
-            document.getElementById('enter-ar').addEventListener('click', () => {
+            document.getElementById('enter-ar').addEventListener('click', async () => {
                 // Hide unsupported message in case it was shown previously
                 document.getElementById('unsupported').style.display = 'none';
-                // Always re-initialize renderer and scene before entering AR
+
+                // Clean up previous renderer and scene if any
                 if (renderer) {
                     renderer.setAnimationLoop(null);
                     if (renderer.domElement.parentNode) {
@@ -710,25 +711,20 @@
                 xrViewerSpace = null;
                 xrRefSpace = null;
                 xrSession = null;
+
                 // Always create a new scene and renderer
                 initScene();
+
                 // Wait for next event loop to ensure renderer.domElement is attached
-                setTimeout(() => {
-                    // Double-check renderer and its domElement are present in the DOM
-                    if (renderer && document.body.contains(renderer.domElement)) {
-                        onEnterAR();
-                    } else {
-                        // Fallback: try again after a short delay
-                        setTimeout(() => {
-                            if (renderer && document.body.contains(renderer.domElement)) {
-                                onEnterAR();
-                            } else {
-                                document.getElementById('unsupported').textContent = 'Renderer failed to initialize. Please reload the page.';
-                                document.getElementById('unsupported').style.display = 'block';
-                            }
-                        }, 100);
-                    }
-                }, 0);
+                await new Promise(r => setTimeout(r, 0));
+
+                // Only call onEnterAR if renderer and its domElement are present and attached
+                if (renderer && renderer.domElement && document.body.contains(renderer.domElement)) {
+                    onEnterAR();
+                } else {
+                    document.getElementById('unsupported').textContent = 'Renderer not ready. Please try again.';
+                    document.getElementById('unsupported').style.display = 'block';
+                }
             });
 
             // Remove the patching logic and always show enter-ar after reset
