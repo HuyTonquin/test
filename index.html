@@ -626,70 +626,78 @@
         }
         function resetGame() {
             // Reset variables
-            if (xrSession) {
-                xrSession.end();
-                xrSession = null;
-            }
+            let restartAR = () => {
+                // Reset game variables
+                playerHealth = 100;
+                score = 0;
+                isShooting = false;
+                lastShotTime = -Infinity;
+                targetLastShotTime = -Infinity;
+                crossbowRotationX = 0;
 
-            // Reset game variables
-            playerHealth = 100;
-            score = 0;
-            isShooting = false;
-            lastShotTime = -Infinity;
-            targetLastShotTime = -Infinity;
-            crossbowRotationX = 0;
+                // Reset UI elements
+                document.getElementById('health').textContent = playerHealth;
+                document.getElementById('score').textContent = score;
+                document.getElementById('healthboard').innerHTML = 'Health: <span id="health">100</span>';
+                document.getElementById('healthboard').style.display = 'none';
+                document.getElementById('scoreboard').style.display = 'none';
+                hideRestartButton();
 
-            // Reset UI elements
-            document.getElementById('health').textContent = playerHealth;
-            document.getElementById('score').textContent = score;
-            document.getElementById('healthboard').innerHTML = 'Health: <span id="health">100</span>';
-            document.getElementById('healthboard').style.display = 'none';
-            document.getElementById('scoreboard').style.display = 'none';
-            hideRestartButton();
-
-            // Clear scene objects
-            if (arrow) {
-                scene.remove(arrow);
-                arrow = null;
-            }
-            if (targetArrow) {
-                scene.remove(targetArrow);
-                targetArrow = null;
-            }
-            if (target) {
-                target.visible = false;
-                target.hit = false;
-            }
-            if (loadedArrow) {
-                loadedArrow.visible = true;
-            }
-            if (crossbowGroup) {
-                crossbowGroup.visible = false;
-            }
-            if (reticle) {
-                reticle.visible = false;
-            }
-
-            // Reset XR-related variables
-            xrHitTestSource = null;
-            xrViewerSpace = null;
-            xrRefSpace = null;
-
-            // Clean up renderer and re-initialize scene
-            if (renderer) {
-                renderer.setAnimationLoop(null);
-                if (renderer.domElement.parentNode) {
-                    renderer.domElement.parentNode.removeChild(renderer.domElement);
+                // Clear scene objects
+                if (arrow) {
+                    scene.remove(arrow);
+                    arrow = null;
                 }
-                renderer.dispose();
-                renderer = null;
+                if (targetArrow) {
+                    scene.remove(targetArrow);
+                    targetArrow = null;
+                }
+                if (target) {
+                    target.visible = false;
+                    target.hit = false;
+                }
+                if (loadedArrow) {
+                    loadedArrow.visible = true;
+                }
+                if (crossbowGroup) {
+                    crossbowGroup.visible = false;
+                }
+                if (reticle) {
+                    reticle.visible = false;
+                }
+
+                // Reset XR-related variables
+                xrHitTestSource = null;
+                xrViewerSpace = null;
+                xrRefSpace = null;
+
+                // Clean up renderer and re-initialize scene
+                if (renderer) {
+                    renderer.setAnimationLoop(null);
+                    if (renderer.domElement.parentNode) {
+                        renderer.domElement.parentNode.removeChild(renderer.domElement);
+                    }
+                    renderer.dispose();
+                    renderer = null;
+                }
+
+                // Re-initialize scene and start new AR session
+                initScene();
+                onEnterAR();
+            };
+
+            if (xrSession) {
+                // Wait for session to end before restarting AR
+                xrSession.addEventListener('end', function onEnded() {
+                    xrSession.removeEventListener('end', onEnded);
+                    xrSession = null;
+                    restartAR();
+                });
+                xrSession.end();
+            } else {
+                restartAR();
             }
-
-            // Re-initialize scene and start new AR session
-            initScene();
-            onEnterAR();
         }
-
         document.getElementById('restart-btn').addEventListener('click', resetGame);
 
         // Setup
