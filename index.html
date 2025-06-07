@@ -628,18 +628,16 @@
             if (loadedArrow) loadedArrow.visible = true;
             crossbowGroup.visible = false;
             isShooting = false;
-            // Show Enter AR button again, hide AR-specific UI
-            document.getElementById('enter-ar').style.display = 'block';
-            document.getElementById('shoot-btn').style.display = 'none';
-            document.getElementById('euler-y-display').style.display = 'none';
-            // Remove renderer's canvas if present (cleanup)
-            if (renderer && renderer.domElement && renderer.domElement.parentNode) {
-                renderer.domElement.parentNode.removeChild(renderer.domElement);
-                renderer = null;
-                scene = null;
-                camera = null;
-            }
-            // Do NOT auto-enter AR; wait for user to click Enter AR
+            // Always re-enter AR mode
+            if (navigator.xr) {
+            document.getElementById('enter-ar').addEventListener('click', () => {
+                if (!renderer) initScene();
+                onEnterAR();
+            });
+        } else {
+            document.getElementById('unsupported').style.display = 'block';
+            document.getElementById('enter-ar').style.display = 'none';
+        }
         }
 
         document.getElementById('restart-btn').addEventListener('click', resetGame);
