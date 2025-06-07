@@ -40,6 +40,7 @@
             display: none;
         }
 
+        /* Scoreboard styles */
         #scoreboard {
             position: absolute;
             top: 10px;
@@ -65,6 +66,7 @@
             transition: box-shadow 0.2s, background 0.2s;
         }
 
+        /* Hit flash animation */
         #healthboard.hit-flash {
             background: #fff !important;
             color: #d00 !important;
@@ -76,7 +78,7 @@
             position: absolute;
             top: 120px;
             right: 10px;
-            z-index: 1000; /* FIXED: Increased z-index to ensure clickability */
+            z-index: 200;
             font-size: 1.2em;
             padding: 0.7em 1.5em;
             border-radius: 0.6em;
@@ -92,41 +94,52 @@
 
 <body>
     <button id="enter-ar">Enter AR</button>
+
     <div id="unsupported">AR not supported on this device/browser.</div>
-    <div id="scoreboard" style="position:absolute;top:10px;left:10px;background:rgba(30,144,255,0.8);color:#fff;padding:0.7em 1.2em;border-radius:0.6em;font-size:1.2em;z-index:100;">
+    <!-- Scoreboard -->
+    <div id="scoreboard"
+        style="position:absolute;top:10px;left:10px;background:rgba(30,144,255,0.8);color:#fff;padding:0.7em 1.2em;border-radius:0.6em;font-size:1.2em;z-index:100;">
         Score: <span id="score">0</span>
     </div>
-    <div id="healthboard" style="position:absolute;top:10px;right:10px;background:rgba(220,20,60,0.8);color:#fff;padding:0.7em 1.2em;border-radius:0.6em;font-size:1.2em;z-index:100;">
+   
+    <!-- Health Display -->
+    <div id="healthboard"
+        style="position:absolute;top:10px;right:10px;background:rgba(220,20,60,0.8);color:#fff;padding:0.7em 1.2em;border-radius:0.6em;font-size:1.2em;z-index:100;">
         Health: <span id="health">100</span>
     </div>
+    <!-- Restart Button -->
     <button id="restart-btn">Restart</button>
-    <button id="shoot-btn" style="position: absolute; bottom: 50px; right: 30px; z-index: 101; font-size: 2em; padding: 0.5em 1.2em; border-radius: 0.5em; border: none; background: #1e90ff; color: white; opacity: 0.85; box-shadow: 0 2px 8px rgba(0,0,0,0.2); display: none;">Shoot</button>
+    <!-- Shoot Button -->
+    <button id="shoot-btn"
+        style="position: absolute; bottom: 50px; right: 30px; z-index: 101; font-size: 2em; padding: 0.5em 1.2em; border-radius: 0.5em; border: none; background: #1e90ff; color: white; opacity: 0.85; box-shadow: 0 2px 8px rgba(0,0,0,0.2); display: none;">Shoot</button>
     <script src="https://unpkg.com/three@0.134.0/build/three.js"></script>
     <script>
         let xrSession = null;
         let xrRefSpace = null;
         let xrViewerSpace = null;
         let xrHitTestSource = null;
-        let renderer = null;
-        let scene = null;
-        let camera = null;
-        let reticle = null;
-        let crossbowParent = null;
-        let crossbowGroup = null;
-        let loadedArrow = null;
-        let target = null;
+        let renderer, scene, camera, cube, reticle;
+
+        // Crossbow group variables
+        let crossbowParent, crossbowGroup, loadedArrow;
+
+        let target = null; // Replace cube with target
         let score = 0;
+
+        // Shooting logic variables
         let arrow = null;
         let arrowVelocity = new THREE.Vector3();
         let isShooting = false;
         let lastShotTime = -Infinity;
-        const reloadTime = 1.2;
+        const reloadTime = 1.2; // seconds
+
+        // Target shooting logic variables
         let playerHealth = 100;
         let targetArrow = null;
         let targetArrowVelocity = new THREE.Vector3();
         let targetLastShotTime = -Infinity;
-        const targetReloadTime = 4;
-        const targetArrowDamage = 50;
+        const targetReloadTime = 4; // seconds
+        const targetArrowDamage = 50; // -50 health per hit
 
         function createBullseyeTexture() {
             const size = 256;
@@ -134,16 +147,22 @@
             canvas.width = canvas.height = size;
             const ctx = canvas.getContext('2d');
             ctx.fillStyle = '#fff';
+            ctx.beginPath();
             ctx.arc(size / 2, size / 2, size / 2, 0, 2 * Math.PI); ctx.fill();
             ctx.fillStyle = '#ff2222';
+            ctx.beginPath();
             ctx.arc(size / 2, size / 2, size / 2 * 0.8, 0, 2 * Math.PI); ctx.fill();
             ctx.fillStyle = '#fff';
+            ctx.beginPath();
             ctx.arc(size / 2, size / 2, size / 2 * 0.55, 0, 2 * Math.PI); ctx.fill();
             ctx.fillStyle = '#2222ff';
+            ctx.beginPath();
             ctx.arc(size / 2, size / 2, size / 2 * 0.35, 0, 2 * Math.PI); ctx.fill();
             ctx.fillStyle = '#fff';
+            ctx.beginPath();
             ctx.arc(size / 2, size / 2, size / 2 * 0.18, 0, 2 * Math.PI); ctx.fill();
             ctx.fillStyle = '#ff2222';
+            ctx.beginPath();
             ctx.arc(size / 2, size / 2, size / 2 * 0.09, 0, 2 * Math.PI); ctx.fill();
             return new THREE.CanvasTexture(canvas);
         }
@@ -154,23 +173,29 @@
             const mesh = new THREE.Mesh(geometry, material);
             mesh.rotation.x = Math.PI / 2;
             mesh.visible = false;
-            mesh.hit = false;
+            mesh.hit = false; // Add hit property
             return mesh;
         }
 
         function createCrossbowGroup(textureLoader) {
             const group = new THREE.Group();
+
+            // Body
             const bodyGeometry = new THREE.BoxGeometry(0.02, 0.05, 0.25);
             const woodTexture = textureLoader.load('https://threejs.org/examples/textures/hardwood2_diffuse.jpg');
             const bodyMaterial = new THREE.MeshPhongMaterial({ map: woodTexture, shininess: 50 });
             const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
             body.position.set(0, 0, 0.02);
             group.add(body);
+
+            // Stick
             const stickGeometry = new THREE.CylinderGeometry(0.0008, 0.0008, 0.045, 32);
             const stickMaterial = new THREE.MeshPhongMaterial({ color: 0xff0000, shininess: 100 });
             const stick = new THREE.Mesh(stickGeometry, stickMaterial);
             stick.position.set(-0.006, 0.032, 0.13);
             group.add(stick);
+
+            // Limbs
             const leftLimbCurve = new THREE.CatmullRomCurve3([
                 new THREE.Vector3(0.01, 0.02, -0.09),
                 new THREE.Vector3(0.035, 0.02, -0.1),
@@ -193,6 +218,8 @@
             const rightLimb = createTaperedLimb(rightLimbCurve);
             group.add(leftLimb);
             group.add(rightLimb);
+
+            // String
             const stringCurveSag = new THREE.CatmullRomCurve3([
                 new THREE.Vector3(-0.25, 0.005, -0.11),
                 new THREE.Vector3(0, 0.03, 0.12),
@@ -202,17 +229,23 @@
             const stringMaterial = new THREE.MeshPhongMaterial({ color: 0x888888, shininess: 50 });
             const bowString = new THREE.Mesh(bowStringGeometry, stringMaterial);
             group.add(bowString);
+
+            // Trigger guard
             const triggerGeometry = new THREE.TorusGeometry(0.02, 0.005, 5, 100, Math.PI);
             const metalMaterial = new THREE.MeshPhongMaterial({ color: 0x00ff00, shininess: 100 });
             const triggerGuard = new THREE.Mesh(triggerGeometry, metalMaterial);
             triggerGuard.position.set(0, -0.015, 0.05);
             triggerGuard.rotation.x = Math.PI / 2;
             group.add(triggerGuard);
+
+            // Grip
             const gripGeometry = new THREE.CylinderGeometry(0.01, 0.01, 0.04, 32);
             const grip = new THREE.Mesh(gripGeometry, bodyMaterial);
             grip.position.set(0, -0.02, 0.03);
             grip.rotation.x = Math.PI / 2;
             group.add(grip);
+
+            // Loaded arrow
             loadedArrow = new THREE.Group();
             const loadedShaft = new THREE.Mesh(
                 new THREE.CylinderGeometry(0.003, 0.003, 0.2, 32),
@@ -230,20 +263,22 @@
             loadedArrow.rotation.x = Math.PI / 2;
             loadedArrow.visible = true;
             group.add(loadedArrow);
+
+            // Position crossbow in front of camera
             group.position.set(0, 0.1, -0.3);
             group.rotation.set(0, 0, 0);
+
             return group;
         }
 
         function initScene() {
-            console.log('initScene called'); // FIXED: Debug log
             if (!window.THREE) {
                 console.error('Three.js not loaded');
-                alert('Three.js failed to load'); // FIXED: Alert for mobile debugging
                 document.getElementById('unsupported').textContent = 'Failed to load Three.js. Check network or CDN.';
                 document.getElementById('unsupported').style.display = 'block';
-                return false;
+                return false; // FIXED: Return false to indicate failure
             }
+            console.log('Initializing scene'); // FIXED: Added debug log
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera();
             renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
@@ -266,10 +301,10 @@
             crossbowParent.add(crossbowGroup);
             scene.add(crossbowParent);
             setupSwipeControls();
-            console.log('initScene completed'); // FIXED: Debug log
-            return true;
+            return true; // FIXED: Return true to indicate success
         }
 
+        // Add shoot event listener in AR
         function shootArrow() {
             if (!crossbowGroup || !crossbowGroup.visible) return;
             const now = performance.now() / 1000;
@@ -300,52 +335,49 @@
             scene.add(arrow);
         }
 
+        // Add shooting event for AR (only via button)
         function enableShooting() {
-            const shootBtn = document.getElementById('shoot-btn');
-            if (shootBtn) {
-                shootBtn.style.display = 'block';
-                shootBtn.addEventListener('click', shootArrow);
-            }
+            document.getElementById('shoot-btn').style.display = 'block';
+            document.getElementById('shoot-btn').addEventListener('click', shootArrow);
         }
-
         function disableShooting() {
-            const shootBtn = document.getElementById('shoot-btn');
-            if (shootBtn) {
-                shootBtn.style.display = 'none';
-                shootBtn.removeEventListener('click', shootArrow);
-            }
+            document.getElementById('shoot-btn').style.display = 'none';
+            document.getElementById('shoot-btn').removeEventListener('click', shootArrow);
         }
 
         async function onEnterAR() {
-            console.log('onEnterAR called'); // FIXED: Debug log
-            const unsupported = document.getElementById('unsupported');
-            const enterAr = document.getElementById('enter-ar');
-            if (unsupported) unsupported.style.display = 'none';
+            console.log('Attempting to start AR session'); // FIXED: Added debug log
+            // Always hide unsupported message when trying to enter AR
+            document.getElementById('unsupported').style.display = 'none';
             if (!navigator.xr) {
-                console.error('WebXR not supported');
-                alert('WebXR not supported'); // FIXED: Alert for mobile debugging
-                if (unsupported) unsupported.textContent = 'AR not supported on this device/browser.';
-                if (unsupported) unsupported.style.display = 'block';
-                if (enterAr) enterAr.style.display = 'none';
-                return false;
+                console.error('WebXR not supported'); // FIXED: Added debug log
+                document.getElementById('unsupported').textContent = 'AR not supported on this device/browser.';
+                document.getElementById('unsupported').style.display = 'block';
+                document.getElementById('enter-ar').style.display = 'none';
+                return false; // FIXED: Return false to indicate failure
             }
             try {
                 xrSession = await navigator.xr.requestSession('immersive-ar', {
                     requiredFeatures: ['hit-test', 'local-floor']
                 });
-                console.log('XR session started'); // FIXED: Debug log
+                console.log('AR session started'); // FIXED: Added debug log
                 renderer.xr.setSession(xrSession);
+
                 xrRefSpace = await xrSession.requestReferenceSpace('local-floor');
                 xrViewerSpace = await xrSession.requestReferenceSpace('viewer');
                 xrHitTestSource = await xrSession.requestHitTestSource({ space: xrViewerSpace });
-                if (enterAr) enterAr.style.display = 'none';
-                if (unsupported) unsupported.style.display = 'none';
+
+                document.getElementById('enter-ar').style.display = 'none';
+                // Hide unsupported message after successful AR session start
+                document.getElementById('unsupported').style.display = 'none';
+
                 renderer.setAnimationLoop(renderAR);
+
                 xrSession.addEventListener('end', () => {
-                    console.log('XR session ended'); // FIXED: Debug log
-                    if (enterAr) enterAr.style.display = 'block';
+                    console.log('AR session ended'); // FIXED: Added debug log
+                    document.getElementById('enter-ar').style.display = 'block';
                     renderer.setAnimationLoop(null);
-                    if (renderer && renderer.domElement && renderer.domElement.parentNode) {
+                    if (renderer.domElement.parentNode) {
                         renderer.domElement.parentNode.removeChild(renderer.domElement);
                     }
                     xrHitTestSource = null;
@@ -354,18 +386,26 @@
                     xrSession = null;
                     disableShooting();
                 });
+
+                // Place target at random position in front of player on tap
                 renderer.domElement.addEventListener('click', () => {
                     if (reticle && reticle.visible) {
+                        // Get reticle Y (surface height)
                         const surfaceY = new THREE.Vector3().setFromMatrixPosition(reticle.matrix).y;
+                        // Get camera position and orientation
                         renderer.xr.getCamera(camera);
                         const origin = camera.position.clone();
+                        // Random distance between 1.5m and 5m
                         const distance = 1.5 + Math.random() * 3.5;
+                        // Random horizontal angle within +/- 60 degrees in front of user
                         const angle = (Math.random() - 0.5) * Math.PI / 1.5;
+                        // Calculate offset in XZ plane
                         const offset = new THREE.Vector3(
                             Math.sin(angle) * distance,
                             0,
                             -Math.cos(angle) * distance
                         );
+                        // Set target position
                         target.position.copy(origin).add(offset);
                         target.position.y = surfaceY;
                         target.visible = true;
@@ -374,57 +414,53 @@
                         enableShooting();
                     }
                 });
-                console.log('onEnterAR completed'); // FIXED: Debug log
-                return true;
+                return true; // FIXED: Return true to indicate success
             } catch (e) {
-                console.error('Failed to start AR session:', e);
-                alert('AR session failed: ' + e.message); // FIXED: Alert for mobile debugging
-                if (unsupported) unsupported.textContent = 'Failed to start AR session: ' + e.message;
-                if (unsupported) unsupported.style.display = 'block';
-                if (enterAr) enterAr.style.display = 'block';
-                return false;
+                console.error('Failed to start AR session:', e); // FIXED: Added debug log
+                document.getElementById('unsupported').textContent = 'Failed to start AR session: ' + e.message;
+                document.getElementById('unsupported').style.display = 'block';
+                document.getElementById('enter-ar').style.display = 'block';
+                return false; // FIXED: Return false to indicate failure
             }
         }
 
-        let crossbowRotationX = 0;
+        let crossbowRotationX = 0; // Track manual rotation
         let touchStartY = null;
         let lastTouchY = null;
 
+        // Touch swipe logic for adjusting crossbow rotation.x
         function setupSwipeControls() {
-            if (renderer && renderer.domElement) {
-                renderer.domElement.addEventListener('touchstart', (e) => {
-                    if (e.touches.length === 1) {
-                        touchStartY = e.touches[0].clientY;
-                        lastTouchY = touchStartY;
-                    }
-                });
-                renderer.domElement.addEventListener('touchmove', (e) => {
-                    if (e.touches.length === 1 && touchStartY !== null) {
-                        const currentY = e.touches[0].clientY;
-                        const deltaY = currentY - lastTouchY;
-                        crossbowRotationX += deltaY * 0.005;
-                        crossbowRotationX = Math.max(-1, Math.min(1, crossbowRotationX));
-                        lastTouchY = currentY;
-                    }
-                });
-                renderer.domElement.addEventListener('touchend', () => {
-                    touchStartY = null;
-                    lastTouchY = null;
-                });
-            }
+            renderer.domElement.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    touchStartY = e.touches[0].clientY;
+                    lastTouchY = touchStartY;
+                }
+            });
+            renderer.domElement.addEventListener('touchmove', (e) => {
+                if (e.touches.length === 1 && touchStartY !== null) {
+                    const currentY = e.touches[0].clientY;
+                    const deltaY = currentY - lastTouchY;
+                    crossbowRotationX += deltaY * 0.005;
+                    crossbowRotationX = Math.max(-1, Math.min(1, crossbowRotationX));
+                    lastTouchY = currentY;
+                }
+            });
+            renderer.domElement.addEventListener('touchend', () => {
+                touchStartY = null;
+                lastTouchY = null;
+            });
         }
 
+        // Flash state for healthboard
         let healthFlashTimeout = null;
 
         function flashHealthboard() {
             const healthboard = document.getElementById('healthboard');
-            if (healthboard) {
-                healthboard.classList.add('hit-flash');
-                if (healthFlashTimeout) clearTimeout(healthFlashTimeout);
-                healthFlashTimeout = setTimeout(() => {
-                    healthboard.classList.remove('hit-flash');
-                }, 250);
-            }
+            healthboard.classList.add('hit-flash');
+            if (healthFlashTimeout) clearTimeout(healthFlashTimeout);
+            healthFlashTimeout = setTimeout(() => {
+                healthboard.classList.remove('hit-flash');
+            }, 250);
         }
 
         function renderAR(timestamp, frame) {
@@ -444,6 +480,8 @@
                     reticle.visible = false;
                 }
             }
+
+            // Move crossbow group with camera if visible
             if (crossbowParent && crossbowGroup && crossbowGroup.visible) {
                 renderer.xr.getCamera(camera);
                 const euler = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ');
@@ -452,6 +490,7 @@
                 crossbowParent.rotation.set(0, euler.y, 0);
                 crossbowGroup.rotation.set(crossbowRotationX, 0, 0);
             }
+
             if (target && target.visible) {
                 renderer.xr.getCamera(camera);
                 const dist = target.position.distanceTo(camera.position);
@@ -459,16 +498,22 @@
                 const scale = baseScale / dist * 3.5;
                 target.scale.setScalar(scale);
             }
+
+            // Arrow movement logic
             if (arrow && isShooting) {
                 arrow.position.x += arrowVelocity.x * 0.016;
                 arrow.position.y += arrowVelocity.y * 0.016;
                 arrow.position.z += arrowVelocity.z * 0.016;
                 arrowVelocity.y -= 0.981 * 0.016;
+
+                // Orient arrow in velocity direction
                 const velocityDirection = arrowVelocity.clone().normalize();
                 if (velocityDirection.lengthSq() > 0) {
                     arrow.lookAt(arrow.position.clone().add(velocityDirection));
                     arrow.rotateX(Math.PI / 2);
                 }
+
+                // Hit detection with target
                 if (target && target.visible && !target.hit && arrow.position.distanceTo(target.position) < 0.1) {
                     scene.remove(arrow);
                     arrow = null;
@@ -476,10 +521,8 @@
                     target.visible = false;
                     target.hit = true;
                     score += 10;
-                    const scoreSpan = document.getElementById('score');
-                    if (scoreSpan) scoreSpan.textContent = score;
-                    const scoreboard = document.getElementById('scoreboard');
-                    if (scoreboard) scoreboard.style.display = 'block';
+                    document.getElementById('score').textContent = score;
+                    document.getElementById('scoreboard').style.display = 'block';
                     setTimeout(() => {
                         if (loadedArrow) loadedArrow.visible = true;
                     }, reloadTime * 1000);
@@ -492,6 +535,8 @@
                     }, reloadTime * 1000);
                 }
             }
+
+            // Target shooting logic
             if (target && target.visible) {
                 const now = performance.now() / 1000;
                 if (!targetArrow && now - targetLastShotTime > targetReloadTime) {
@@ -516,6 +561,8 @@
                     targetLastShotTime = now;
                 }
             }
+
+            // Move target arrow
             if (targetArrow) {
                 targetArrow.position.x += targetArrowVelocity.x * 0.016;
                 targetArrow.position.y += targetArrowVelocity.y * 0.016;
@@ -531,12 +578,10 @@
                     targetArrow = null;
                     playerHealth -= targetArrowDamage;
                     if (playerHealth < 0) playerHealth = 0;
-                    const healthSpan = document.getElementById('health');
-                    if (healthSpan) healthSpan.textContent = playerHealth;
+                    document.getElementById('health').textContent = playerHealth;
                     flashHealthboard();
                     if (playerHealth <= 0) {
-                        const healthboard = document.getElementById('healthboard');
-                        if (healthboard) healthboard.textContent = "Game Over! You were hit!";
+                        document.getElementById('healthboard').textContent = "Game Over! You were hit!";
                         disableShooting();
                         if (xrSession) xrSession.end();
                         showRestartButton();
@@ -546,203 +591,59 @@
                     targetArrow = null;
                 }
             }
-            const healthboard = document.getElementById('healthboard');
-            if (healthboard) healthboard.style.display = 'block';
+
+            document.getElementById('healthboard').style.display = 'block';
             renderer.render(scene, camera);
         }
 
+        // Add restart logic
         function showRestartButton() {
-            console.log('showRestartButton called'); // FIXED: Debug log
-            const restartBtn = document.getElementById('restart-btn');
-            if (restartBtn) {
-                restartBtn.style.display = 'block';
-                console.log('Restart button displayed'); // FIXED: Debug log
-            } else {
-                console.error('Restart button not found');
-                alert('Restart button not found'); // FIXED: Alert for mobile debugging
-            }
+            console.log('Showing restart button'); // FIXED: Added debug log
+            document.getElementById('restart-btn').style.display = 'block';
         }
-
         function hideRestartButton() {
-            console.log('hideRestartButton called'); // FIXED: Debug log
-            const restartBtn = document.getElementById('restart-btn');
-            if (restartBtn) restartBtn.style.display = 'none';
+            console.log('Hiding restart button'); // FIXED: Added debug log
+            document.getElementById('restart-btn').style.display = 'none';
+        }
+        // REPLACED: Minimal resetGame function
+        function resetGame() {
+            document.getElementById('health').textContent = 100;
+            document.getElementById('score').textContent = 0;
+            hideRestartButton();
+            document.getElementById('enter-ar').style.display = 'block';
         }
 
-        async function resetGame() {
-            console.log('resetGame started'); // FIXED: Debug log
-            alert('Resetting game'); // FIXED: Alert for mobile debugging
-            try {
-                // Reset game variables
-                console.log('Resetting game variables'); // FIXED: Debug log
-                playerHealth = 100;
-                score = 0;
-                isShooting = false;
-                lastShotTime = -Infinity;
-                targetLastShotTime = -Infinity;
-                crossbowRotationX = 0;
+        // Setup
+        if (navigator.xr) {
+            document.getElementById('enter-ar').addEventListener('click', async () => {
+                console.log('Enter AR button clicked'); // FIXED: Added debug log
+                document.getElementById('unsupported').style.display = 'none';
 
-                // Reset UI elements
-                console.log('Resetting UI elements'); // FIXED: Debug log
-                const healthSpan = document.getElementById('health');
-                const healthboard = document.getElementById('healthboard');
-                const scoreSpan = document.getElementById('score');
-                const scoreboard = document.getElementById('scoreboard');
-                const unsupported = document.getElementById('unsupported');
-                const enterAr = document.getElementById('enter-ar');
-                if (healthSpan) healthSpan.textContent = playerHealth;
-                if (healthboard) healthboard.innerHTML = 'Health: <span id="health">100</span>';
-                if (healthboard) healthboard.style.display = 'none';
-                if (scoreSpan) scoreSpan.textContent = score;
-                if (scoreboard) scoreboard.style.display = 'none';
-                hideRestartButton();
-                if (unsupported) unsupported.style.display = 'none';
-                if (enterAr) enterAr.style.display = 'none';
-
-                // Clean up scene objects
-                console.log('Cleaning up scene objects'); // FIXED: Debug log
-                if (arrow && scene) {
-                    scene.remove(arrow);
-                    arrow = null;
-                }
-                if (targetArrow && scene) {
-                    scene.remove(targetArrow);
-                    targetArrow = null;
-                }
-                if (loadedArrow) loadedArrow.visible = true;
-                if (target) {
-                    target.visible = false;
-                    target.hit = false;
-                }
-                if (crossbowGroup) crossbowGroup.visible = false;
-                if (reticle) reticle.visible = false;
-
-                // End XR session
-                console.log('Ending XR session'); // FIXED: Debug log
-                if (xrSession) {
-                    try {
-                        await xrSession.end();
-                        console.log('XR session ended'); // FIXED: Debug log
-                    } catch (e) {
-                        console.error('Error ending XR session:', e);
-                    }
-                    xrSession = null;
-                }
-                xrHitTestSource = null;
-                xrViewerSpace = null;
-                xrRefSpace = null;
-
-                // Clean up renderer
-                console.log('Cleaning up renderer'); // FIXED: Debug log
-                if (renderer) {
-                    renderer.setAnimationLoop(null);
-                    if (renderer.domElement && renderer.domElement.parentNode) {
-                        renderer.domElement.parentNode.removeChild(renderer.domElement);
-                    }
-                    renderer.dispose();
-                    renderer = null;
-                }
-                scene = null;
-                camera = null;
-
-                // Reinitialize scene
-                console.log('Calling initScene'); // FIXED: Debug log
-                const sceneInitialized = initScene();
-                if (!sceneInitialized) {
-                    console.error('initScene failed');
-                    alert('Scene initialization failed'); // FIXED: Alert for mobile debugging
-                    if (unsupported) unsupported.textContent = 'Failed to initialize scene. Please reload the page.';
-                    if (unsupported) unsupported.style.display = 'block';
-                    if (enterAr) enterAr.style.display = 'block';
-                    return;
+                if (!renderer) {
+                    console.log('Calling initScene for Enter AR'); // FIXED: Added debug log
+                    const sceneInitialized = initScene();
+                    if (!sceneInitialized) return;
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                } else if (!document.body.contains(renderer.domElement)) {
+                    console.log('Reattaching renderer DOM element'); // FIXED: Added debug log
+                    document.body.appendChild(renderer.domElement);
+                    await new Promise(resolve => setTimeout(resolve, 100));
                 }
 
-                // Wait for DOM to settle
-                console.log('Waiting for DOM'); // FIXED: Debug log
-                await new Promise(resolve => setTimeout(resolve, 200)); // FIXED: Increased delay
-
-                // Start AR session
-                console.log('Calling onEnterAR'); // FIXED: Debug log
                 if (renderer && renderer.domElement && document.body.contains(renderer.domElement)) {
-                    const arStarted = await onEnterAR();
-                    if (!arStarted) {
-                        console.error('onEnterAR failed');
-                        alert('AR session failed to start'); // FIXED: Alert for mobile debugging
-                        if (unsupported) unsupported.textContent = 'Failed to start AR session. Please try again.';
-                        if (unsupported) unsupported.style.display = 'block';
-                        if (enterAr) enterAr.style.display = 'block';
-                    } else {
-                        console.log('Game reset and AR started'); // FIXED: Debug log
-                        alert('Game reset complete'); // FIXED: Alert for mobile debugging
-                    }
+                    console.log('Starting AR session from Enter AR'); // FIXED: Added debug log
+                    await onEnterAR();
                 } else {
-                    console.error('Renderer not ready');
-                    alert('Renderer not ready'); // FIXED: Alert for mobile debugging
-                    if (unsupported) unsupported.textContent = 'Renderer not ready. Please reload the page.';
-                    if (unsupported) unsupported.style.display = 'block';
-                    if (enterAr) enterAr.style.display = 'block';
+                    console.error('Renderer not ready for Enter AR'); // FIXED: Added debug log
+                    document.getElementById('unsupported').textContent = 'Renderer not ready. Please reload the page.';
+                    document.getElementById('unsupported').style.display = 'block';
                 }
-            } catch (e) {
-                console.error('resetGame error:', e);
-                alert('Reset failed: ' + e.message); // FIXED: Alert for mobile debugging
-                const unsupported = document.getElementById('unsupported');
-                const enterAr = document.getElementById('enter-ar');
-                if (unsupported) unsupported.textContent = 'Reset failed: ' + e.message;
-                if (unsupported) unsupported.style.display = 'block';
-                if (enterAr) enterAr.style.display = 'block';
-            }
+            });
+        } else {
+            console.error('WebXR not supported on initial load'); // FIXED: Added debug log
+            document.getElementById('unsupported').style.display = 'block';
+            document.getElementById('enter-ar').style.display = 'none';
         }
-
-        // FIXED: Setup event listeners after DOM is loaded
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('DOM loaded, setting up event listeners'); // FIXED: Debug log
-            const restartBtn = document.getElementById('restart-btn');
-            if (restartBtn) {
-                restartBtn.addEventListener('click', () => {
-                    console.log('Restart button clicked'); // FIXED: Debug log
-                    alert('Restart button clicked'); // FIXED: Alert for mobile debugging
-                    resetGame();
-                });
-                console.log('Restart button listener added'); // FIXED: Debug log
-            } else {
-                console.error('Restart button not found on DOM load');
-                alert('Restart button not found'); // FIXED: Alert for mobile debugging
-            }
-
-            const enterAr = document.getElementById('enter-ar');
-            if (enterAr && navigator.xr) {
-                enterAr.addEventListener('click', async () => {
-                    console.log('Enter AR button clicked'); // FIXED: Debug log
-                    const unsupported = document.getElementById('unsupported');
-                    if (unsupported) unsupported.style.display = 'none';
-                    if (!renderer) {
-                        console.log('Calling initScene for Enter AR'); // FIXED: Debug log
-                        const sceneInitialized = initScene();
-                        if (!sceneInitialized) return;
-                        await new Promise(resolve => setTimeout(resolve, 200));
-                    } else if (!document.body.contains(renderer.domElement)) {
-                        console.log('Reattaching renderer DOM element'); // FIXED: Debug log
-                        document.body.appendChild(renderer.domElement);
-                        await new Promise(resolve => setTimeout(resolve, 200));
-                    }
-                    if (renderer && renderer.domElement && document.body.contains(renderer.domElement)) {
-                        console.log('Starting AR session from Enter AR'); // FIXED: Debug log
-                        await onEnterAR();
-                    } else {
-                        console.error('Renderer not ready for Enter AR');
-                        alert('Renderer not ready'); // FIXED: Alert for mobile debugging
-                        if (unsupported) unsupported.textContent = 'Renderer not ready. Please reload the page.';
-                        if (unsupported) unsupported.style.display = 'block';
-                    }
-                });
-            } else if (!navigator.xr) {
-                console.error('WebXR not supported on initial load');
-                alert('WebXR not supported'); // FIXED: Alert for mobile debugging
-                const unsupported = document.getElementById('unsupported');
-                if (unsupported) unsupported.style.display = 'block';
-                if (enterAr) enterAr.style.display = 'none';
-            }
-        });
     </script>
 </body>
 
