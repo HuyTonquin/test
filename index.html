@@ -592,16 +592,21 @@
             camera = null;
 
             // End XR session if active
-            if (xrSession) {
+           if (xrSession) {
                 xrSession.end().then(() => {
                     xrSession = null;
-                    // Reinitialize scene after XR session ends
                     initScene();
+                    // Delay to ensure XR session is fully closed before requesting a new one
+                    setTimeout(() => {
+                        onEnterAR();
+                    }, 200); // 200ms delay
                 });
             } else {
-                // Reinitialize scene immediately if no XR session
-                initScene();           
-                onEnterAR();
+                // Reinitialize scene and start AR session if no XR session
+                initScene();
+                setTimeout(() => {
+                    onEnterAR();
+                }, 100); // 100ms delay for consistency
             }
         }
 
