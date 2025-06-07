@@ -112,7 +112,7 @@
     <!-- Shoot Button -->
     <button id="shoot-btn"
         style="position: absolute; bottom: 50px; right: 30px; z-index: 101; font-size: 2em; padding: 0.5em 1.2em; border-radius: 0.5em; border: none; background: #1e90ff; color: white; opacity: 0.85; box-shadow: 0 2px 8px rgba(0,0,0,0.2); display: none;">Shoot</button>
-    <script src="https://unpkg.com/three@0.143.0/build/three.js"></script>
+    <script src="https://unpkg.com/three@0.134.0/build/three.js"></script>
     <script>
         let xrSession = null;
         let xrRefSpace = null;
@@ -379,6 +379,7 @@
                     xrRefSpace = null;
                     xrSession = null;
                     disableShooting();
+                    // Removed euler-y-display as it’s not in the DOM
                 });
 
                 // Place target at random position in front of player on tap
@@ -403,8 +404,6 @@
                         target.position.copy(origin).add(offset);
                         target.position.y = surfaceY;
                         target.visible = true;
-                        // Debug: log when target is set visible
-                        // console.log('Target placed and visible');
                         target.hit = false;
                         crossbowGroup.visible = true;
                         enableShooting();
@@ -417,6 +416,7 @@
                 document.getElementById('enter-ar').style.display = 'block';
             }
         }
+
         let crossbowRotationX = 0; // Track manual rotation
         let touchStartY = null;
         let lastTouchY = null;
@@ -445,6 +445,7 @@
                 lastTouchY = null;
             });
         }
+
         // Flash state for healthboard
         let healthFlashTimeout = null;
 
@@ -466,8 +467,6 @@
                     const pose = hit.getPose(xrRefSpace);
                     if (pose) {
                         reticle.visible = true;
-                        // Debug: log when reticle is set visible
-                        // console.log('Reticle visible');
                         reticle.matrix.fromArray(pose.transform.matrix);
                     } else {
                         reticle.visible = false;
@@ -485,11 +484,7 @@
                 crossbowParent.position.copy(camera.position).add(fixedOffset);
                 crossbowParent.rotation.set(0, euler.y, 0);
                 crossbowGroup.rotation.set(crossbowRotationX, 0, 0);
-                //document.getElementById('euler-y-value').textContent = (euler.y + crossbowRotationY).toFixed(3);
-
-
             }
-            // --- Stick follows crossbow position only ---
 
             if (target && target.visible) {
                 renderer.xr.getCamera(camera);
@@ -595,9 +590,8 @@
                         document.getElementById('healthboard').textContent = "Game Over! You were hit!";
                         // Optionally, stop AR session or disable shooting
                         disableShooting();
-                         showRestartButton();
                         if (xrSession) xrSession.end();
-                       
+                        showRestartButton();
                     }
                 } else if (targetArrow.position.distanceTo(target.position) > 20) {
                     // Remove arrow if too far
@@ -619,7 +613,7 @@
         function hideRestartButton() {
             document.getElementById('restart-btn').style.display = 'none';
         }
-        function resetGame() {
+        async function resetGame() {
             // Reset game variables
             playerHealth = 100;
             score = 0;
@@ -635,7 +629,6 @@
             document.getElementById('healthboard').style.display = 'none';
             document.getElementById('scoreboard').style.display = 'none';
             hideRestartButton();
-            document.getElementById('enter-ar').style.display = 'none';
             document.getElementById('unsupported').style.display = 'none';
 
             // Remove arrows and target from scene
@@ -663,52 +656,45 @@
                 reticle.visible = false;
             }
 
-            // End XR session if active, will re-init scene and show enter-ar button
-          if (xrSession) {
-                xrSession.end().then(() => {
-                    // Clean up renderer and scene
-                    if (renderer) {
-                        renderer.setAnimationLoop(null);
-                        if (renderer.domElement.parentNode) {
-                            renderer.domElement.parentNode.removeChild(renderer.domElement);
-                        }
-                        renderer.dispose();
-                        renderer = null;
-                    }
-                    scene = null;
-                    camera = null;
-                    xrHitTestSource = null;
-                    xrViewerSpace = null;
-                    xrRefSpace = null;
-                    xrSession = null;
-                    initScene();
-                    // Wait for renderer to be ready, then start AR session again
-                    setTimeout(() => {
-                        if (renderer && renderer.domElement && document.body.contains(renderer.domElement)) {
-                            onEnterAR();
-                        }
-                    }, 100);
-                });
-            } else {
-                // Always clean up renderer and scene, then show enter-ar
-                if (renderer) {
-                    renderer.setAnimationLoop(null);
-                    if (renderer.domElement.parentNode) {
-                        renderer.domElement.parentNode.removeChild(renderer.domElement);
-                    }
-                    renderer.dispose();
-                    renderer = null;
+            // End XR session if active
+            if (xrSession) {
+                await xrSession.end();
+            }
+
+            // Clean up renderer and scene
+            if (renderer) {
+                renderer.setAnimationLoop(null);
+                if (renderer.domElement.parentNode) {
+                    renderer.domElement.parentNode.removeChild(renderer.domElement);
                 }
-                scene = null;
-                camera = null;
-                xrHitTestSource = null;
-                xrViewerSpace = null;
-                xrRefSpace = null;
-                xrSession = null;
-                initScene();
+                renderer.dispose();
+                renderer = null;
+            }
+            scene = null;
+            camera = null;
+            xrHitTestSource = null;
+            xrViewerSpace = null;
+            xrRefSpace = null;
+            xrSession = null;
+
+            // Reinitialize scene
+            initScene();
+
+            // Wait for renderer.domElement to be attached
+            await new Promise(resolve => setTimeout(resolve, 0));
+
+            // Automatically start new AR session
+            if (renderer && renderer.domElement && document.body.contains(renderer.domElement)) {
+                await onEnterAR();
+            } else {
+                document.getElementById('unsupported').textContent = 'Renderer not ready. Please reload the page.';
+                document.getElementById('unsupported').style.display = 'block';
                 document.getElementById('enter-ar').style.display = 'block';
             }
         }
+
+        // Listen for restart button click
+        document.getElementById('restart-btn').addEventListener('click', resetGame);
 
         // Setup
         if (navigator.xr) {
@@ -728,20 +714,16 @@
 
                 // Defensive: check renderer and domElement
                 if (renderer && renderer.domElement && document.body.contains(renderer.domElement)) {
-                    onEnterAR();
+                    await onEnterAR();
                 } else {
                     document.getElementById('unsupported').textContent = 'Renderer not ready. Please reload the page.';
                     document.getElementById('unsupported').style.display = 'block';
                 }
             });
-
-            // Remove the patching logic and always show enter-ar after reset
-            // No need for wasRestarting or patchXrSessionEnd
         } else {
             document.getElementById('unsupported').style.display = 'block';
             document.getElementById('enter-ar').style.display = 'none';
         }
-            document.getElementById('restart-btn').addEventListener('click', resetGame);
     </script>
 </body>
 
