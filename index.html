@@ -595,9 +595,10 @@
            if (xrSession) {
                 xrSession.end().then(() => {
                     xrSession = null;
-                    initScene();
+                   
                     // Delay to ensure XR session is fully closed before requesting a new one
                     setTimeout(() => {
+                         initScene();
                         onEnterAR();
                     }, 200); // 200ms delay
                 });
