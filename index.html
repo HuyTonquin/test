@@ -665,25 +665,49 @@
 
             // End XR session if active, will re-init scene and show enter-ar button
           if (xrSession) {
-                xrSession.end();
-            }
-            // Always clean up renderer and scene, then show enter-ar
-            if (renderer) {
-                renderer.setAnimationLoop(null);
-                if (renderer.domElement.parentNode) {
-                    renderer.domElement.parentNode.removeChild(renderer.domElement);
+                xrSession.end().then(() => {
+                    // Clean up renderer and scene
+                    if (renderer) {
+                        renderer.setAnimationLoop(null);
+                        if (renderer.domElement.parentNode) {
+                            renderer.domElement.parentNode.removeChild(renderer.domElement);
+                        }
+                        renderer.dispose();
+                        renderer = null;
+                    }
+                    scene = null;
+                    camera = null;
+                    xrHitTestSource = null;
+                    xrViewerSpace = null;
+                    xrRefSpace = null;
+                    xrSession = null;
+                    initScene();
+                    // Wait for renderer to be ready, then start AR session again
+                    setTimeout(() => {
+                        if (renderer && renderer.domElement && document.body.contains(renderer.domElement)) {
+                            onEnterAR();
+                        }
+                    }, 100);
+                });
+            } else {
+                // Always clean up renderer and scene, then show enter-ar
+                if (renderer) {
+                    renderer.setAnimationLoop(null);
+                    if (renderer.domElement.parentNode) {
+                        renderer.domElement.parentNode.removeChild(renderer.domElement);
+                    }
+                    renderer.dispose();
+                    renderer = null;
                 }
-                renderer.dispose();
-                renderer = null;
+                scene = null;
+                camera = null;
+                xrHitTestSource = null;
+                xrViewerSpace = null;
+                xrRefSpace = null;
+                xrSession = null;
+                initScene();
+                document.getElementById('enter-ar').style.display = 'block';
             }
-            scene = null;
-            camera = null;
-            xrHitTestSource = null;
-            xrViewerSpace = null;
-            xrRefSpace = null;
-            xrSession = null;
-            initScene();
-            document.getElementById('enter-ar').style.display = 'block';
         }
       
 
