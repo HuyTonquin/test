@@ -365,46 +365,49 @@ arrowVelocity.copy(direction).multiplyScalar(baseSpeed);
 
                 xrSession.addEventListener('end', () => {
                     document.getElementById('enter-ar').style.display = 'block';
-                    if (renderer.domElement.parentNode) {
+                      if (renderer && renderer.domElement && renderer.domElement.parentNode) {
                         renderer.domElement.parentNode.removeChild(renderer.domElement);
                     }
                     xrHitTestSource = null;
                     xrViewerSpace = null;
                     xrRefSpace = null;
                     xrSession = null;
+                    renderer = null; 
                     disableShooting();
-                    document.getElementById('euler-y-display').style.display = 'block';
                 });
 
         // Place target at random position in front of player on tap
-        renderer.domElement.addEventListener('click', () => {
-            if (reticle && reticle.visible) {
-                // Get reticle Y (surface height)
-                const surfaceY = new THREE.Vector3().setFromMatrixPosition(reticle.matrix).y;
-                // Get camera position and orientation
-                renderer.xr.getCamera(camera);
-                const origin = camera.position.clone();
-                // Random distance between 1.5m and 5m
-                const distance = 1.5 + Math.random() * 3.5;
-                // Random horizontal angle within +/- 60 degrees in front of user
-                const angle = (Math.random() - 0.5) * Math.PI / 1.5;
-                // Calculate offset in XZ plane
-                const offset = new THREE.Vector3(
-                    Math.sin(angle) * distance,
-                    0,
-                    -Math.cos(angle) * distance
-                );
-                // Set target position
-                target.position.copy(origin).add(offset);
-                target.position.y = surfaceY;
-                target.visible = true;
-                // Debug: log when target is set visible
-                // console.log('Target placed and visible');
-                target.hit = false;
-                crossbowGroup.visible = true;
-                enableShooting();
-            }
-        });
+         if (!renderer.domElement._targetPlacementListener) {
+                    renderer.domElement.addEventListener('click', () => {
+                        if (reticle && reticle.visible) {
+                            // Get reticle Y (surface height)
+                            const surfaceY = new THREE.Vector3().setFromMatrixPosition(reticle.matrix).y;
+                            // Get camera position and orientation
+                            renderer.xr.getCamera(camera);
+                            const origin = camera.position.clone();
+                            // Random distance between 1.5m and 5m
+                            const distance = 1.5 + Math.random() * 3.5;
+                            // Random horizontal angle within +/- 60 degrees in front of user
+                            const angle = (Math.random() - 0.5) * Math.PI / 1.5;
+                            // Calculate offset in XZ plane
+                            const offset = new THREE.Vector3(
+                                Math.sin(angle) * distance,
+                                0,
+                                -Math.cos(angle) * distance
+                            );
+                            // Set target position
+                            target.position.copy(origin).add(offset);
+                            target.position.y = surfaceY;
+                            target.visible = true;
+                            // Debug: log when target is set visible
+                            // console.log('Target placed and visible');
+                            target.hit = false;
+                            crossbowGroup.visible = true;
+                            enableShooting();
+                        }
+                    });
+                    renderer.domElement._targetPlacementListener = true;
+                }
             } catch (e) {
                 document.getElementById('unsupported').style.display = 'block';
                 document.getElementById('enter-ar').style.display = 'none';
@@ -631,23 +634,9 @@ arrowVelocity.copy(direction).multiplyScalar(baseSpeed);
             crossbowGroup.visible = false;
             isShooting = false;
             // Always re-enter AR mode
-            if (isRestarting) return;
-            isRestarting = true;
-
-            // If an XR session is active, wait for it to end before starting a new one
-            if (xrSession) {
-                xrSession.addEventListener('end', () => {
-                    isRestarting = false;
-                    if (!renderer) initScene();
-                    onEnterAR();
-                }, { once: true });
-                xrSession.end();
-            } else {
-                isRestarting = false;
-                if (!renderer) initScene();
+           initScene();
                 onEnterAR();
             }
-        }
 
         document.getElementById('restart-btn').addEventListener('click', resetGame);
 
