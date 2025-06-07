@@ -139,7 +139,7 @@
         let targetArrowVelocity = new THREE.Vector3();
         let targetLastShotTime = -Infinity;
         const targetReloadTime = 4; // seconds
-        const targetArrowDamage = 50; // -2 health per hit
+        const targetArrowDamage = 50; // -50 health per hit
 
         function createBullseyeTexture() {
             const size = 256;
@@ -188,7 +188,7 @@
             body.position.set(0, 0, 0.02);
             group.add(body);
 
-            // Stick (add here for crossbow group)
+            // Stick
             const stickGeometry = new THREE.CylinderGeometry(0.0008, 0.0008, 0.045, 32);
             const stickMaterial = new THREE.MeshPhongMaterial({ color: 0xff0000, shininess: 100 });
             const stick = new THREE.Mesh(stickGeometry, stickMaterial);
@@ -276,8 +276,9 @@
                 console.error('Three.js not loaded');
                 document.getElementById('unsupported').textContent = 'Failed to load Three.js. Check network or CDN.';
                 document.getElementById('unsupported').style.display = 'block';
-                return;
+                return false; // FIXED: Return false to indicate failure
             }
+            console.log('Initializing scene'); // FIXED: Added debug log
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera();
             renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
@@ -300,6 +301,7 @@
             crossbowParent.add(crossbowGroup);
             scene.add(crossbowParent);
             setupSwipeControls();
+            return true; // FIXED: Return true to indicate success
         }
 
         // Add shoot event listener in AR
@@ -344,18 +346,21 @@
         }
 
         async function onEnterAR() {
+            console.log('Attempting to start AR session'); // FIXED: Added debug log
             // Always hide unsupported message when trying to enter AR
             document.getElementById('unsupported').style.display = 'none';
             if (!navigator.xr) {
+                console.error('WebXR not supported'); // FIXED: Added debug log
                 document.getElementById('unsupported').textContent = 'AR not supported on this device/browser.';
                 document.getElementById('unsupported').style.display = 'block';
                 document.getElementById('enter-ar').style.display = 'none';
-                return;
+                return false; // FIXED: Return false to indicate failure
             }
             try {
                 xrSession = await navigator.xr.requestSession('immersive-ar', {
                     requiredFeatures: ['hit-test', 'local-floor']
                 });
+                console.log('AR session started'); // FIXED: Added debug log
                 renderer.xr.setSession(xrSession);
 
                 xrRefSpace = await xrSession.requestReferenceSpace('local-floor');
@@ -369,6 +374,7 @@
                 renderer.setAnimationLoop(renderAR);
 
                 xrSession.addEventListener('end', () => {
+                    console.log('AR session ended'); // FIXED: Added debug log
                     document.getElementById('enter-ar').style.display = 'block';
                     renderer.setAnimationLoop(null);
                     if (renderer.domElement.parentNode) {
@@ -379,7 +385,6 @@
                     xrRefSpace = null;
                     xrSession = null;
                     disableShooting();
-                    // Removed euler-y-display as it’s not in the DOM
                 });
 
                 // Place target at random position in front of player on tap
@@ -409,11 +414,13 @@
                         enableShooting();
                     }
                 });
+                return true; // FIXED: Return true to indicate success
             } catch (e) {
-                // Only show a generic error if session fails, not the unsupported message
-                document.getElementById('unsupported').textContent = 'Failed to start AR session. Please try again.';
+                console.error('Failed to start AR session:', e); // FIXED: Added debug log
+                document.getElementById('unsupported').textContent = 'Failed to start AR session: ' + e.message;
                 document.getElementById('unsupported').style.display = 'block';
                 document.getElementById('enter-ar').style.display = 'block';
+                return false; // FIXED: Return false to indicate failure
             }
         }
 
@@ -421,7 +428,7 @@
         let touchStartY = null;
         let lastTouchY = null;
 
-        // Touch swipe logic for adjusting crossbow rotation.y
+        // Touch swipe logic for adjusting crossbow rotation.x
         function setupSwipeControls() {
             renderer.domElement.addEventListener('touchstart', (e) => {
                 if (e.touches.length === 1) {
@@ -433,14 +440,12 @@
                 if (e.touches.length === 1 && touchStartY !== null) {
                     const currentY = e.touches[0].clientY;
                     const deltaY = currentY - lastTouchY;
-                    // Sensitivity: adjust as needed (positive deltaY = swipe down)
                     crossbowRotationX += deltaY * 0.005;
-                    // Clamp rotation if desired, e.g. between -1.2 and 1.2 radians
                     crossbowRotationX = Math.max(-1, Math.min(1, crossbowRotationX));
                     lastTouchY = currentY;
                 }
             });
-            renderer.domElement.addEventListener('touchend', (e) => {
+            renderer.domElement.addEventListener('touchend', () => {
                 touchStartY = null;
                 lastTouchY = null;
             });
@@ -493,6 +498,7 @@
                 const scale = baseScale / dist * 3.5;
                 target.scale.setScalar(scale);
             }
+
             // Arrow movement logic
             if (arrow && isShooting) {
                 arrow.position.x += arrowVelocity.x * 0.016;
@@ -513,17 +519,14 @@
                     arrow = null;
                     isShooting = false;
                     target.visible = false;
-                    target.hit = true; // Mark as hit
+                    target.hit = true;
                     score += 10;
                     document.getElementById('score').textContent = score;
-                    // Ensure scoreboard is visible
                     document.getElementById('scoreboard').style.display = 'block';
                     setTimeout(() => {
                         if (loadedArrow) loadedArrow.visible = true;
                     }, reloadTime * 1000);
-                }
-                // Remove arrow if too far or below ground
-                else if (arrow && (arrow.position.distanceTo(camera.position) > 10 || arrow.position.y < -2)) {
+                } else if (arrow && (arrow.position.distanceTo(camera.position) > 10 || arrow.position.y < -2)) {
                     scene.remove(arrow);
                     arrow = null;
                     isShooting = false;
@@ -537,7 +540,6 @@
             if (target && target.visible) {
                 const now = performance.now() / 1000;
                 if (!targetArrow && now - targetLastShotTime > targetReloadTime) {
-                    // Shoot arrow at player
                     targetArrow = new THREE.Group();
                     const shaft = new THREE.Mesh(
                         new THREE.CylinderGeometry(0.005, 0.005, 0.08, 12),
@@ -550,13 +552,10 @@
                     tip.position.set(0, 0.08, 0);
                     targetArrow.add(shaft);
                     targetArrow.add(tip);
-                    // Place at target position
                     targetArrow.position.copy(target.position);
-                    // Aim at player (camera)
                     renderer.xr.getCamera(camera);
                     const direction = camera.position.clone().sub(target.position).normalize();
                     targetArrow.lookAt(camera.position);
-                    // Set velocity toward player
                     targetArrowVelocity.copy(direction).multiplyScalar(10);
                     scene.add(targetArrow);
                     targetLastShotTime = now;
@@ -568,52 +567,48 @@
                 targetArrow.position.x += targetArrowVelocity.x * 0.016;
                 targetArrow.position.y += targetArrowVelocity.y * 0.016;
                 targetArrow.position.z += targetArrowVelocity.z * 0.016;
-                // Orient arrow in velocity direction
                 const velocityDirection = targetArrowVelocity.clone().normalize();
                 if (velocityDirection.lengthSq() > 0) {
                     targetArrow.lookAt(targetArrow.position.clone().add(velocityDirection));
                     targetArrow.rotateX(Math.PI / 2);
                 }
-                // Hit detection with player (camera)
                 renderer.xr.getCamera(camera);
                 if (targetArrow.position.distanceTo(camera.position) < 0.12) {
-                    // Player hit
                     scene.remove(targetArrow);
                     targetArrow = null;
                     playerHealth -= targetArrowDamage;
                     if (playerHealth < 0) playerHealth = 0;
                     document.getElementById('health').textContent = playerHealth;
-                    // Flash healthboard on hit
                     flashHealthboard();
-                    // Game over
                     if (playerHealth <= 0) {
                         document.getElementById('healthboard').textContent = "Game Over! You were hit!";
-                        // Optionally, stop AR session or disable shooting
                         disableShooting();
                         if (xrSession) xrSession.end();
                         showRestartButton();
                     }
                 } else if (targetArrow.position.distanceTo(target.position) > 20) {
-                    // Remove arrow if too far
                     scene.remove(targetArrow);
                     targetArrow = null;
                 }
             }
 
-            // Always show healthboard during AR
             document.getElementById('healthboard').style.display = 'block';
-
             renderer.render(scene, camera);
         }
 
         // Add restart logic
         function showRestartButton() {
+            console.log('Showing restart button'); // FIXED: Added debug log
             document.getElementById('restart-btn').style.display = 'block';
         }
         function hideRestartButton() {
+            console.log('Hiding restart button'); // FIXED: Added debug log
             document.getElementById('restart-btn').style.display = 'none';
         }
+        // FIXED: Simplified and added robust cleanup with debug logs
         async function resetGame() {
+            console.log('Starting game reset'); // FIXED: Added debug log
+
             // Reset game variables
             playerHealth = 100;
             score = 0;
@@ -630,6 +625,8 @@
             document.getElementById('scoreboard').style.display = 'none';
             hideRestartButton();
             document.getElementById('unsupported').style.display = 'none';
+            // FIXED: Ensure enter-ar button is hidden initially
+            document.getElementById('enter-ar').style.display = 'none';
 
             // Remove arrows and target from scene
             if (arrow) {
@@ -647,22 +644,27 @@
                 target.visible = false;
                 target.hit = false;
             }
-            // Reset crossbow
             if (crossbowGroup) {
                 crossbowGroup.visible = false;
             }
-            // Reset reticle
             if (reticle) {
                 reticle.visible = false;
             }
 
             // End XR session if active
             if (xrSession) {
-                await xrSession.end();
+                console.log('Ending XR session'); // FIXED: Added debug log
+                try {
+                    await xrSession.end();
+                } catch (e) {
+                    console.error('Error ending XR session:', e); // FIXED: Added debug log
+                }
+                xrSession = null;
             }
 
             // Clean up renderer and scene
             if (renderer) {
+                console.log('Cleaning up renderer'); // FIXED: Added debug log
                 renderer.setAnimationLoop(null);
                 if (renderer.domElement.parentNode) {
                     renderer.domElement.parentNode.removeChild(renderer.domElement);
@@ -675,52 +677,78 @@
             xrHitTestSource = null;
             xrViewerSpace = null;
             xrRefSpace = null;
-            xrSession = null;
 
             // Reinitialize scene
-            initScene();
+            console.log('Calling initScene'); // FIXED: Added debug log
+            const sceneInitialized = initScene();
+            if (!sceneInitialized) {
+                console.error('Scene initialization failed'); // FIXED: Added debug log
+                document.getElementById('unsupported').textContent = 'Failed to initialize scene. Please reload the page.';
+                document.getElementById('unsupported').style.display = 'block';
+                document.getElementById('enter-ar').style.display = 'block';
+                return;
+            }
 
-            // Wait for renderer.domElement to be attached
-            await new Promise(resolve => setTimeout(resolve, 0));
+            // FIXED: Wait for DOM to settle
+            await new Promise(resolve => setTimeout(resolve, 100));
 
-            // Automatically start new AR session
+            // Start new AR session
+            console.log('Calling onEnterAR'); // FIXED: Added debug log
             if (renderer && renderer.domElement && document.body.contains(renderer.domElement)) {
-                await onEnterAR();
+                const arStarted = await onEnterAR();
+                if (!arStarted) {
+                    console.error('AR session failed to start'); // FIXED: Added debug log
+                    document.getElementById('unsupported').textContent = 'Failed to start AR session. Please try again.';
+                    document.getElementById('unsupported').style.display = 'block';
+                    document.getElementById('enter-ar').style.display = 'block';
+                }
             } else {
+                console.error('Renderer not ready'); // FIXED: Added debug log
                 document.getElementById('unsupported').textContent = 'Renderer not ready. Please reload the page.';
                 document.getElementById('unsupported').style.display = 'block';
                 document.getElementById('enter-ar').style.display = 'block';
             }
+            console.log('Game reset complete'); // FIXED: Added debug log
         }
 
-        // Listen for restart button click
-        document.getElementById('restart-btn').addEventListener('click', resetGame);
+        // FIXED: Ensure event listener is added after DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Adding restart button event listener'); // FIXED: Added debug log
+            const restartBtn = document.getElementById('restart-btn');
+            restartBtn.addEventListener('click', () => {
+                console.log('Restart button clicked'); // FIXED: Added debug log
+                resetGame();
+            });
+        });
 
         // Setup
         if (navigator.xr) {
             document.getElementById('enter-ar').addEventListener('click', async () => {
-                // Hide unsupported message in case it was shown previously
+                console.log('Enter AR button clicked'); // FIXED: Added debug log
                 document.getElementById('unsupported').style.display = 'none';
 
-                // Only call initScene if renderer is not present
                 if (!renderer) {
-                    initScene();
-                    // Wait for renderer.domElement to be attached
-                    await new Promise(r => setTimeout(r, 0));
+                    console.log('Calling initScene for Enter AR'); // FIXED: Added debug log
+                    const sceneInitialized = initScene();
+                    if (!sceneInitialized) return;
+                    await new Promise(resolve => setTimeout(resolve, 100));
                 } else if (!document.body.contains(renderer.domElement)) {
+                    console.log('Reattaching renderer DOM element'); // FIXED: Added debug log
                     document.body.appendChild(renderer.domElement);
-                    await new Promise(r => setTimeout(r, 0));
+                    await new Promise(resolve => setTimeout(resolve, 100));
                 }
 
-                // Defensive: check renderer and domElement
                 if (renderer && renderer.domElement && document.body.contains(renderer.domElement)) {
+                    console.log('Starting AR session from Enter AR'); // FIXED: Added debug log
                     await onEnterAR();
                 } else {
+                    console.error('Renderer not ready for Enter AR'); // FIXED: Added debug log
                     document.getElementById('unsupported').textContent = 'Renderer not ready. Please reload the page.';
                     document.getElementById('unsupported').style.display = 'block';
                 }
             });
         } else {
+            console.error('WebXR not supported on initial load'); // FIXED: Added debug log
             document.getElementById('unsupported').style.display = 'block';
             document.getElementById('enter-ar').style.display = 'none';
         }
