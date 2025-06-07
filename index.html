@@ -680,6 +680,10 @@
                 renderer.dispose();
                 renderer = null;
             }
+             if (scene) {
+                scene = null;
+            }
+            camera = null;
 
             // End XR session if active, but do not auto-restart AR
             if (xrSession) {
