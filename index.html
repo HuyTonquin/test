@@ -344,8 +344,10 @@
         }
 
         async function onEnterAR() {
+             document.getElementById('unsupported').style.display = 'none';
             if (!navigator.xr) {
                 document.getElementById('unsupported').style.display = 'block';
+                  document.getElementById('enter-ar').style.display = 'none';
                 return;
             }
             try {
@@ -407,7 +409,7 @@
                 });
             } catch (e) {
                 document.getElementById('unsupported').style.display = 'block';
-                document.getElementById('enter-ar').style.display = 'none';
+                 document.getElementById('enter-ar').style.display = 'block';
             }
         }
         let crossbowRotationX = 0; // Track manual rotation
@@ -616,6 +618,8 @@
                 xrSession.end();
                 xrSession = null;
             }
+             document.getElementById('unsupported').style.display = 'none';
+            document.getElementById('enter-ar').style.display = 'block';
 
             // Reset game variables
             playerHealth = 100;
@@ -682,6 +686,7 @@
         // Setup
         if (navigator.xr) {
             document.getElementById('enter-ar').addEventListener('click', () => {
+                document.getElementById('unsupported').style.display = 'none';
                 if (!renderer) initScene();
                 onEnterAR();
             });
