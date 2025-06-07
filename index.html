@@ -55,7 +55,7 @@
 
         #healthboard {
             position: absolute;
-            top: 10px;
+            top: 45px;
             right: 10px;
             background: rgba(220, 20, 60, 0.8);
             color: #fff;
@@ -413,10 +413,11 @@
                     }
                 });
             } catch (e) {
-                // Only show a generic error if session fails, not the unsupported message
-                document.getElementById('unsupported').textContent = 'Failed to start AR session. Please try again.';
-                document.getElementById('unsupported').style.display = 'block';
-                document.getElementById('enter-ar').style.display = 'block';
+                if (!xrSession) { // Only show error if not already in a session
+                    document.getElementById('unsupported').textContent = 'Failed to start AR session. Please try again.';
+                    document.getElementById('unsupported').style.display = 'block';
+                    document.getElementById('enter-ar').style.display = 'block';
+                }
             }
         }
         let crossbowRotationX = 0; // Track manual rotation
@@ -693,19 +694,27 @@
 
         // Setup
         if (navigator.xr) {
-            document.getElementById('enter-ar').addEventListener('click', () => {
-                // Hide unsupported message in case it was shown previously
+            let arStarting = false; // Prevent double AR session requests
+
+            document.getElementById('enter-ar').addEventListener('click', async () => {
+                if (arStarting) return;
+                arStarting = true;
+                document.getElementById('enter-ar').disabled = true;
                 document.getElementById('unsupported').style.display = 'none';
                 // Always re-initialize renderer and scene before entering AR
                 if (!renderer) {
                     initScene();
                 } else {
-                    // If renderer exists, ensure its DOM element is attached
                     if (!document.body.contains(renderer.domElement)) {
                         document.body.appendChild(renderer.domElement);
                     }
                 }
-                onEnterAR();
+                try {
+                    await onEnterAR();
+                } finally {
+                    arStarting = false;
+                    document.getElementById('enter-ar').disabled = false;
+                }
             });
 
             // Add: After XR session ends (including after reset), re-enter AR if restart was requested
