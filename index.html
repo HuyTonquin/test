@@ -196,7 +196,7 @@
             const stickGeometry = new THREE.CylinderGeometry(0.0008, 0.0008, 0.045, 32);
             const stickMaterial = new THREE.MeshPhongMaterial({ color: 0xff0000, shininess: 100 });
             const stick = new THREE.Mesh(stickGeometry, stickMaterial);
-            stick.position.set(-0.006, 0.032, 0.13);
+            stick.position.set(0, 0.032, 0.13);
             group.add(stick);
 
             // Limbs
@@ -303,8 +303,6 @@
             crossbowGroup.visible = false;
             crossbowParent.add(crossbowGroup);
             scene.add(crossbowParent);
-             scene.add(stick);
-            stick.visible = false;
             setupSwipeControls();
         }
 
