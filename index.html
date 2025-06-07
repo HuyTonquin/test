@@ -76,7 +76,7 @@
             position: absolute;
             top: 120px;
             right: 10px;
-            z-index: 1000; /* FIXED: Increased z-index to ensure clickability */
+            z-index: 1000;
             font-size: 1.2em;
             padding: 0.7em 1.5em;
             border-radius: 0.6em;
@@ -239,9 +239,10 @@
             console.log('initScene called'); // FIXED: Debug log
             if (!window.THREE) {
                 console.error('Three.js not loaded');
-                alert('Three.js failed to load'); // FIXED: Alert for mobile debugging
-                document.getElementById('unsupported').textContent = 'Failed to load Three.js. Check network or CDN.';
-                document.getElementById('unsupported').style.display = 'block';
+                alert('Three.js failed to load');
+                const unsupported = document.getElementById('unsupported');
+                if (unsupported) unsupported.textContent = 'Failed to load Three.js. Check network or CDN.';
+                if (unsupported) unsupported.style.display = 'block';
                 return false;
             }
             scene = new THREE.Scene();
@@ -266,7 +267,7 @@
             crossbowParent.add(crossbowGroup);
             scene.add(crossbowParent);
             setupSwipeControls();
-            console.log('initScene completed'); // FIXED: Debug log
+            console.log('initScene completed');
             return true;
         }
 
@@ -317,13 +318,13 @@
         }
 
         async function onEnterAR() {
-            console.log('onEnterAR called'); // FIXED: Debug log
+            console.log('onEnterAR called');
             const unsupported = document.getElementById('unsupported');
             const enterAr = document.getElementById('enter-ar');
             if (unsupported) unsupported.style.display = 'none';
             if (!navigator.xr) {
                 console.error('WebXR not supported');
-                alert('WebXR not supported'); // FIXED: Alert for mobile debugging
+                alert('WebXR not supported');
                 if (unsupported) unsupported.textContent = 'AR not supported on this device/browser.';
                 if (unsupported) unsupported.style.display = 'block';
                 if (enterAr) enterAr.style.display = 'none';
@@ -333,7 +334,7 @@
                 xrSession = await navigator.xr.requestSession('immersive-ar', {
                     requiredFeatures: ['hit-test', 'local-floor']
                 });
-                console.log('XR session started'); // FIXED: Debug log
+                console.log('XR session started');
                 renderer.xr.setSession(xrSession);
                 xrRefSpace = await xrSession.requestReferenceSpace('local-floor');
                 xrViewerSpace = await xrSession.requestReferenceSpace('viewer');
@@ -342,7 +343,7 @@
                 if (unsupported) unsupported.style.display = 'none';
                 renderer.setAnimationLoop(renderAR);
                 xrSession.addEventListener('end', () => {
-                    console.log('XR session ended'); // FIXED: Debug log
+                    console.log('XR session ended');
                     if (enterAr) enterAr.style.display = 'block';
                     renderer.setAnimationLoop(null);
                     if (renderer && renderer.domElement && renderer.domElement.parentNode) {
@@ -374,12 +375,12 @@
                         enableShooting();
                     }
                 });
-                console.log('onEnterAR completed'); // FIXED: Debug log
+                console.log('onEnterAR completed');
                 return true;
             } catch (e) {
                 console.error('Failed to start AR session:', e);
-                alert('AR session failed: ' + e.message); // FIXED: Alert for mobile debugging
-                if (unsupported) unsupported.textContent = 'Failed to start AR session: ' + e.message;
+                alert('AR session failed: ' + (e.message || 'Unknown error')); // FIXED: Fallback for undefined message
+                if (unsupported) unsupported.textContent = 'Failed to start AR session: ' + (e.message || 'Unknown error');
                 if (unsupported) unsupported.style.display = 'block';
                 if (enterAr) enterAr.style.display = 'block';
                 return false;
@@ -552,38 +553,44 @@
         }
 
         function showRestartButton() {
-            console.log('showRestartButton called'); // FIXED: Debug log
+            console.log('showRestartButton called');
             const restartBtn = document.getElementById('restart-btn');
             if (restartBtn) {
                 restartBtn.style.display = 'block';
-                console.log('Restart button displayed'); // FIXED: Debug log
+                console.log('Restart button displayed');
             } else {
                 console.error('Restart button not found');
-                alert('Restart button not found'); // FIXED: Alert for mobile debugging
+                alert('Restart button not found');
             }
         }
 
         function hideRestartButton() {
-            console.log('hideRestartButton called'); // FIXED: Debug log
+            console.log('hideRestartButton called');
             const restartBtn = document.getElementById('restart-btn');
             if (restartBtn) restartBtn.style.display = 'none';
         }
 
         async function resetGame() {
-            console.log('resetGame started'); // FIXED: Debug log
-            alert('Resetting game'); // FIXED: Alert for mobile debugging
+            console.log('resetGame started');
+            alert('Resetting game');
+            // NEW: Granular try-catch blocks to isolate error
             try {
                 // Reset game variables
-                console.log('Resetting game variables'); // FIXED: Debug log
+                console.log('Resetting game variables');
                 playerHealth = 100;
                 score = 0;
                 isShooting = false;
                 lastShotTime = -Infinity;
                 targetLastShotTime = -Infinity;
                 crossbowRotationX = 0;
+            } catch (e) {
+                console.error('Error resetting variables:', e);
+                throw new Error('Failed to reset variables: ' + (e.message || 'Unknown error')); // NEW: Rethrow with details
+            }
 
+            try {
                 // Reset UI elements
-                console.log('Resetting UI elements'); // FIXED: Debug log
+                console.log('Resetting UI elements');
                 const healthSpan = document.getElementById('health');
                 const healthboard = document.getElementById('healthboard');
                 const scoreSpan = document.getElementById('score');
@@ -598,9 +605,14 @@
                 hideRestartButton();
                 if (unsupported) unsupported.style.display = 'none';
                 if (enterAr) enterAr.style.display = 'none';
+            } catch (e) {
+                console.error('Error resetting UI:', e);
+                throw new Error('Failed to reset UI: ' + (e.message || 'Unknown error')); // NEW: Rethrow with details
+            }
 
+            try {
                 // Clean up scene objects
-                console.log('Cleaning up scene objects'); // FIXED: Debug log
+                console.log('Cleaning up scene objects');
                 if (arrow && scene) {
                     scene.remove(arrow);
                     arrow = null;
@@ -616,24 +628,30 @@
                 }
                 if (crossbowGroup) crossbowGroup.visible = false;
                 if (reticle) reticle.visible = false;
+            } catch (e) {
+                console.error('Error cleaning scene:', e);
+                throw new Error('Failed to clean scene: ' + (e.message || 'Unknown error')); // NEW: Rethrow with details
+            }
 
+            try {
                 // End XR session
-                console.log('Ending XR session'); // FIXED: Debug log
+                console.log('Ending XR session');
                 if (xrSession) {
-                    try {
-                        await xrSession.end();
-                        console.log('XR session ended'); // FIXED: Debug log
-                    } catch (e) {
-                        console.error('Error ending XR session:', e);
-                    }
+                    await xrSession.end();
+                    console.log('XR session ended');
                     xrSession = null;
                 }
                 xrHitTestSource = null;
                 xrViewerSpace = null;
                 xrRefSpace = null;
+            } catch (e) {
+                console.error('Error ending XR session:', e);
+                throw new Error('Failed to end XR session: ' + (e.message || 'Unknown error')); // NEW: Rethrow with details
+            }
 
+            try {
                 // Clean up renderer
-                console.log('Cleaning up renderer'); // FIXED: Debug log
+                console.log('Cleaning up renderer');
                 if (renderer) {
                     renderer.setAnimationLoop(null);
                     if (renderer.domElement && renderer.domElement.parentNode) {
@@ -644,100 +662,127 @@
                 }
                 scene = null;
                 camera = null;
+            } catch (e) {
+                console.error('Error cleaning renderer:', e);
+                throw new Error('Failed to clean renderer: ' + (e.message || 'Unknown error')); // NEW: Rethrow with details
+            }
 
+            try {
                 // Reinitialize scene
-                console.log('Calling initScene'); // FIXED: Debug log
+                console.log('Calling initScene');
                 const sceneInitialized = initScene();
                 if (!sceneInitialized) {
                     console.error('initScene failed');
-                    alert('Scene initialization failed'); // FIXED: Alert for mobile debugging
+                    alert('Scene initialization failed');
+                    const unsupported = document.getElementById('unsupported');
+                    const enterAr = document.getElementById('enter-ar');
                     if (unsupported) unsupported.textContent = 'Failed to initialize scene. Please reload the page.';
                     if (unsupported) unsupported.style.display = 'block';
                     if (enterAr) enterAr.style.display = 'block';
                     return;
                 }
+            } catch (e) {
+                console.error('Error initializing scene:', e);
+                throw new Error('Failed to initialize scene: ' + (e.message || 'Unknown error')); // NEW: Rethrow with details
+            }
 
+            try {
                 // Wait for DOM to settle
-                console.log('Waiting for DOM'); // FIXED: Debug log
-                await new Promise(resolve => setTimeout(resolve, 200)); // FIXED: Increased delay
+                console.log('Waiting for DOM');
+                await new Promise(resolve => setTimeout(resolve, 200));
+            } catch (e) {
+                console.error('Error waiting for DOM:', e);
+                throw new Error('Failed waiting for DOM: ' + (e.message || 'Unknown error')); // NEW: Rethrow with details
+            }
 
+            try {
                 // Start AR session
-                console.log('Calling onEnterAR'); // FIXED: Debug log
+                console.log('Calling onEnterAR');
                 if (renderer && renderer.domElement && document.body.contains(renderer.domElement)) {
                     const arStarted = await onEnterAR();
                     if (!arStarted) {
                         console.error('onEnterAR failed');
-                        alert('AR session failed to start'); // FIXED: Alert for mobile debugging
+                        alert('AR session failed to start');
+                        const unsupported = document.getElementById('unsupported');
+                        const enterAr = document.getElementById('enter-ar');
                         if (unsupported) unsupported.textContent = 'Failed to start AR session. Please try again.';
                         if (unsupported) unsupported.style.display = 'block';
                         if (enterAr) enterAr.style.display = 'block';
                     } else {
-                        console.log('Game reset and AR started'); // FIXED: Debug log
-                        alert('Game reset complete'); // FIXED: Alert for mobile debugging
+                        console.log('Game reset and AR started');
+                        alert('Game reset complete');
                     }
                 } else {
                     console.error('Renderer not ready');
-                    alert('Renderer not ready'); // FIXED: Alert for mobile debugging
+                    alert('Renderer not ready');
+                    const unsupported = document.getElementById('unsupported');
+                    const enterAr = document.getElementById('enter-ar');
                     if (unsupported) unsupported.textContent = 'Renderer not ready. Please reload the page.';
                     if (unsupported) unsupported.style.display = 'block';
                     if (enterAr) enterAr.style.display = 'block';
                 }
             } catch (e) {
-                console.error('resetGame error:', e);
-                alert('Reset failed: ' + e.message); // FIXED: Alert for mobile debugging
-                const unsupported = document.getElementById('unsupported');
-                const enterAr = document.getElementById('enter-ar');
-                if (unsupported) unsupported.textContent = 'Reset failed: ' + e.message;
-                if (unsupported) unsupported.style.display = 'block';
-                if (enterAr) enterAr.style.display = 'block';
+                console.error('Error starting AR:', e);
+                throw new Error('Failed to start AR: ' + (e.message || 'Unknown error')); // NEW: Rethrow with details
             }
+        } catch (e) {
+            // FIXED: Robust error handling for undefined or malformed errors
+            console.error('resetGame error:', e);
+            const errorMessage = e && e.message ? e.message : 'Unknown error (error object may be undefined)';
+            alert('Reset failed: ' + errorMessage);
+            const unsupported = document.getElementById('unsupported');
+            const enterAr = document.getElementById('enter-ar');
+            if (unsupported) unsupported.textContent = 'Reset failed: ' + errorMessage;
+            if (unsupported) unsupported.style.display = 'block';
+            if (enterAr) enterAr.style.display = 'block';
         }
+        console.log('resetGame ended'); // NEW: Debug log to confirm completion
+    }
 
-        // FIXED: Setup event listeners after DOM is loaded
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('DOM loaded, setting up event listeners'); // FIXED: Debug log
+            console.log('DOM loaded, setting up event listeners');
             const restartBtn = document.getElementById('restart-btn');
             if (restartBtn) {
                 restartBtn.addEventListener('click', () => {
-                    console.log('Restart button clicked'); // FIXED: Debug log
-                    alert('Restart button clicked'); // FIXED: Alert for mobile debugging
+                    console.log('Restart button clicked');
+                    alert('Restart button clicked');
                     resetGame();
                 });
-                console.log('Restart button listener added'); // FIXED: Debug log
+                console.log('Restart button listener added');
             } else {
                 console.error('Restart button not found on DOM load');
-                alert('Restart button not found'); // FIXED: Alert for mobile debugging
+                alert('Restart button not found');
             }
 
             const enterAr = document.getElementById('enter-ar');
             if (enterAr && navigator.xr) {
                 enterAr.addEventListener('click', async () => {
-                    console.log('Enter AR button clicked'); // FIXED: Debug log
+                    console.log('Enter AR button clicked');
                     const unsupported = document.getElementById('unsupported');
                     if (unsupported) unsupported.style.display = 'none';
                     if (!renderer) {
-                        console.log('Calling initScene for Enter AR'); // FIXED: Debug log
+                        console.log('Calling initScene for Enter AR');
                         const sceneInitialized = initScene();
                         if (!sceneInitialized) return;
                         await new Promise(resolve => setTimeout(resolve, 200));
                     } else if (!document.body.contains(renderer.domElement)) {
-                        console.log('Reattaching renderer DOM element'); // FIXED: Debug log
+                        console.log('Reattaching renderer DOM element');
                         document.body.appendChild(renderer.domElement);
                         await new Promise(resolve => setTimeout(resolve, 200));
                     }
                     if (renderer && renderer.domElement && document.body.contains(renderer.domElement)) {
-                        console.log('Starting AR session from Enter AR'); // FIXED: Debug log
+                        console.log('Starting AR session from Enter AR');
                         await onEnterAR();
                     } else {
                         console.error('Renderer not ready for Enter AR');
-                        alert('Renderer not ready'); // FIXED: Alert for mobile debugging
+                        alert('Renderer not ready');
                         if (unsupported) unsupported.textContent = 'Renderer not ready. Please reload the page.';
                         if (unsupported) unsupported.style.display = 'block';
                     }
                 });
             } else if (!navigator.xr) {
                 console.error('WebXR not supported on initial load');
-                alert('WebXR not supported'); // FIXED: Alert for mobile debugging
+                alert('WebXR not supported');
                 const unsupported = document.getElementById('unsupported');
                 if (unsupported) unsupported.style.display = 'block';
                 if (enterAr) enterAr.style.display = 'none';
