@@ -664,9 +664,7 @@
             }
 
             // End XR session if active, will re-init scene and show enter-ar button
-          let wasXrSession = false;
-            if (xrSession) {
-                wasXrSession = true;
+          if (xrSession) {
                 xrSession.end();
             }
             // Always clean up renderer and scene, then show enter-ar
@@ -685,19 +683,9 @@
             xrRefSpace = null;
             xrSession = null;
             initScene();
-
-            // Automatically re-enter AR session after reset if previously in AR
-            if (wasXrSession && navigator.xr) {
-                // Wait for renderer to be ready before calling onEnterAR
-                setTimeout(() => {
-                    if (renderer && renderer.domElement && document.body.contains(renderer.domElement)) {
-                        onEnterAR();
-                    }
-                }, 100);
-            } else {
-                document.getElementById('enter-ar').style.display = 'block';
-            }
+            document.getElementById('enter-ar').style.display = 'block';
         }
+      
 
         // Listen for restart button click
         document.getElementById('restart-btn').addEventListener('click', resetGame);
