@@ -129,6 +129,7 @@
 
         let target = null; // Replace cube with target
         let score = 0;
+
          // Shooting logic variables
         let arrow = null;
         let arrowVelocity = new THREE.Vector3();
@@ -142,8 +143,8 @@
         let targetArrowVelocity = new THREE.Vector3();
         let targetLastShotTime = -Infinity;
         const targetReloadTime = 4; // seconds
-        const targetArrowDamage = 2 // -10 health per hit
-
+        const targetArrowDamage = 2; // -2 health per hit
+        
         function createBullseyeTexture() {
             const size = 256;
             const canvas = document.createElement('canvas');
@@ -191,13 +192,12 @@
             body.position.set(0, 0, 0.02);
             group.add(body);
 
-            // Stick
+            // Stick (add here for crossbow group)
             const stickGeometry = new THREE.CylinderGeometry(0.0008, 0.0008, 0.045, 32);
             const stickMaterial = new THREE.MeshPhongMaterial({ color: 0xff0000, shininess: 100 });
-            stick = new THREE.Mesh(stickGeometry, stickMaterial);
+            const stick = new THREE.Mesh(stickGeometry, stickMaterial);
             stick.position.set(-0.006, 0.032, 0.13);
-            // Do NOT add stick to group here
-            // group.add(stick);
+            group.add(stick);
 
             // Limbs
             const leftLimbCurve = new THREE.CatmullRomCurve3([
@@ -494,7 +494,7 @@ arrowVelocity.copy(direction).multiplyScalar(baseSpeed);
                 renderer.xr.getCamera(camera);
                 const dist = target.position.distanceTo(camera.position);
                 const baseScale = 0.8;
-                const scale = baseScale / dist * 3;
+                const scale = baseScale / dist * 3.5;
                 target.scale.setScalar(scale);
             }
             // Arrow movement logic
