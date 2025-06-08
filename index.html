@@ -300,6 +300,11 @@
             crossbowGroup.visible = false;
             crossbowParent.add(crossbowGroup);
             scene.add(crossbowParent);
+             const crosshairGeometry = new THREE.RingGeometry(0.012, 0.018, 32);
+            const crosshairMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00, side: THREE.DoubleSide });
+            crosshair = new THREE.Mesh(crosshairGeometry, crosshairMaterial);
+            crosshair.visible = false;
+            scene.add(crosshair);
             setupSwipeControls();
             return true; // FIXED: Return true to indicate success
         }
