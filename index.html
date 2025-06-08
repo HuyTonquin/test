@@ -139,7 +139,7 @@
         let targetArrowVelocity = new THREE.Vector3();
         let targetLastShotTime = -Infinity;
         const targetReloadTime = 4; // seconds
-        const targetArrowDamage = 50; // -50 health per hit
+        const targetArrowDamage = 2; // -50 health per hit
 
         function createBullseyeTexture() {
             const size = 256;
@@ -300,11 +300,15 @@
             crossbowGroup.visible = false;
             crossbowParent.add(crossbowGroup);
             scene.add(crossbowParent);
-             const crosshairGeometry = new THREE.RingGeometry(0.012, 0.018, 32);
+
+            // --- Add crosshair mesh ---
+            const crosshairGeometry = new THREE.RingGeometry(0.012, 0.018, 32);
             const crosshairMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00, side: THREE.DoubleSide });
             crosshair = new THREE.Mesh(crosshairGeometry, crosshairMaterial);
             crosshair.visible = false;
             scene.add(crosshair);
+            // --- End crosshair mesh ---
+
             setupSwipeControls();
             return true; // FIXED: Return true to indicate success
         }
@@ -494,7 +498,7 @@
                 crossbowParent.position.copy(camera.position).add(fixedOffset);
                 crossbowParent.rotation.set(0, euler.y, 0);
                 crossbowGroup.rotation.set(crossbowRotationX, 0, 0);
-                
+
                 // --- Crosshair logic ---
                 // Show crosshair when crossbow is visible
                 crosshair.visible = true;
