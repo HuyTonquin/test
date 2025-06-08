@@ -302,7 +302,7 @@
             scene.add(crossbowParent);
 
             // --- Add crosshair mesh ---
-            const crosshairGeometry = new THREE.CircleGeometry(0.1, 64);
+            const crosshairGeometry = new THREE.CircleGeometry(0.05, 64);
             const crosshairMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000, transparent: true, opacity: 0.45, side: THREE.DoubleSide });
             crosshair = new THREE.Mesh(crosshairGeometry, crosshairMaterial);
             crosshair.visible = false;
