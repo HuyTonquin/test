@@ -510,7 +510,7 @@
                 const tipWorld = new THREE.Vector3(0, 0.03, 0.15).applyMatrix4(crossbowGroup.matrixWorld);
                 crosshair.position.copy(tipWorld).add(direction.clone().multiplyScalar(2));
                 crosshair.quaternion.copy(worldQuaternion);
-                crosshair.rotateX(Math.PI); // Face camera
+                crosshair.rotateX(Math.PI/4); // Face camera
                 // --- End crosshair logic ---
             } else if (crosshair) {
                 crosshair.visible = false;
