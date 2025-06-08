@@ -489,6 +489,22 @@
                 crossbowParent.position.copy(camera.position).add(fixedOffset);
                 crossbowParent.rotation.set(0, euler.y, 0);
                 crossbowGroup.rotation.set(crossbowRotationX, 0, 0);
+                
+                // --- Crosshair logic ---
+                // Show crosshair when crossbow is visible
+                crosshair.visible = true;
+                // Predict arrow direction (same as shootArrow)
+                crossbowGroup.updateMatrixWorld();
+                const worldQuaternion = new THREE.Quaternion().setFromRotationMatrix(crossbowGroup.matrixWorld);
+                const direction = new THREE.Vector3(0, 0, -1.5).applyQuaternion(worldQuaternion).normalize();
+                // Place crosshair 2 meters ahead of crossbow tip
+                const tipWorld = new THREE.Vector3(0, 0.03, 0.15).applyMatrix4(crossbowGroup.matrixWorld);
+                crosshair.position.copy(tipWorld).add(direction.clone().multiplyScalar(2));
+                crosshair.quaternion.copy(worldQuaternion);
+                crosshair.rotateX(Math.PI / 2); // Face camera
+                // --- End crosshair logic ---
+            } else if (crosshair) {
+                crosshair.visible = false;
             }
 
             if (target && target.visible) {
