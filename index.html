@@ -519,8 +519,8 @@
             if (target && target.visible) {
                 renderer.xr.getCamera(camera);
                 const dist = target.position.distanceTo(camera.position);
-                const baseScale = 0.8;
-                const scale = baseScale / dist * 3.5;
+                const baseScale = 1;
+                const scale = baseScale / dist * 3;
                 target.scale.setScalar(scale);
             }
 
